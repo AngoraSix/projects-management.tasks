@@ -1,0 +1,15 @@
+context:
+  initializer:
+    classes: com.angorasix.projects.management.core.BeansInitializer
+server:
+  port: ${A6_PROJECTS_MGMT_CORE_PORT:9086}
+
+spring:
+  config:
+    import: classpath:/api.yml, classpath:/security.yml
+  application:
+    name: ${APP_NAME:projects.management.core}
+  data:
+    mongodb:
+      uri: ${A6_PROJECTS_MGMT_CORE_MONGO_DB_URI:mongodb://localhost:27017/}${A6_PROJECTS_MGMT_CORE_MONGO_DB_NAME:a6-projects-management}${A6_PROJECTS_MGMT_CORE_MONGO_DB_PARAMS:?}
+#      auto-index-creation: true
