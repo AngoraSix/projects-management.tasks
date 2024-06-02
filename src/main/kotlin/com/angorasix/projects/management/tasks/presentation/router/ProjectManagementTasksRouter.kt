@@ -30,12 +30,12 @@ class ProjectManagementTasksRouter(
                 )
             }
             apiConfigs.routes.baseByIdCrudRoute.nest {
-                method(apiConfigs.routes.updateTask.method).nest {
-                    method(
-                        apiConfigs.routes.updateTask.method,
-                        handler::updateProjectManagementTask,
-                    )
-                }
+//                method(apiConfigs.routes.updateTask.method).nest {
+//                    method(
+//                        apiConfigs.routes.updateTask.method,
+//                        handler::updateProjectManagementTask,
+//                    )
+//                }
                 method(apiConfigs.routes.getTask.method).nest {
                     method(
                         apiConfigs.routes.getTask.method,

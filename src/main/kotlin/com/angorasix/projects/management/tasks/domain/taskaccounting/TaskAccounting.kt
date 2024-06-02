@@ -15,6 +15,7 @@ import java.time.Instant
 @Document
 data class TaskAccounting @PersistenceCreator private constructor(
     @field:Id val id: String?,
+    val taskId: String,
     val earnedCaps: Double,
     val redemptionStartInstant: Instant,
     val redemptionEndInstant: Instant,
@@ -22,12 +23,14 @@ data class TaskAccounting @PersistenceCreator private constructor(
     val redemptionFrequency: String = "daily",
 ) {
     constructor(
+        taskId: String,
         earnedCaps: Double,
         redemptionStartInstant: Instant,
         redemptionEndInstant: Instant,
         redemptions: List<TaskRedemption> = emptyList(),
     ) : this(
         null,
+        taskId,
         earnedCaps,
         redemptionStartInstant,
         redemptionEndInstant,

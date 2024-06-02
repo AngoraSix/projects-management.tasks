@@ -26,9 +26,9 @@ import reactor.core.publisher.Flux
  */
 @ExperimentalCoroutinesApi
 @ExtendWith(MockKExtension::class)
-class TaskFilterRepositoryImplUnitTest {
+class TaskInfraRepositoryImplUnitTest {
 
-    private lateinit var filterRepoImpl: TaskFilterRepository
+    private lateinit var filterRepoImpl: TaskInfraRepository
 
     @MockK
     private lateinit var mongoOps: ReactiveMongoOperations
@@ -37,7 +37,7 @@ class TaskFilterRepositoryImplUnitTest {
 
     @BeforeEach
     fun init() {
-        filterRepoImpl = TaskFilterRepositoryImpl(mongoOps)
+        filterRepoImpl = DefaultTaskInfraRepository(mongoOps)
     }
 
     @Test

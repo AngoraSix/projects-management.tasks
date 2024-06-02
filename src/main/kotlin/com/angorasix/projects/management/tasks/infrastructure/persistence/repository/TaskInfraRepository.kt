@@ -11,10 +11,12 @@ import kotlinx.coroutines.flow.Flow
  *
  * @author rozagerardo
  */
-interface TaskFilterRepository {
+interface TaskInfraRepository {
     fun findUsingFilter(filter: ListTaskFilter): Flow<Task>
     suspend fun findByIdForContributor(
         filter: ListTaskFilter,
         requestingContributor: SimpleContributor?,
     ): Task?
+
+    suspend fun updateOrCreate(tasks: List<Task>): BulkResult
 }

@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.domain.task
 
-import com.angorasix.projects.management.tasks.infrastructure.persistence.repository.TaskFilterRepository
+import com.angorasix.projects.management.tasks.infrastructure.persistence.repository.TaskInfraRepository
 import org.springframework.data.repository.kotlin.CoroutineCrudRepository
 import org.springframework.data.repository.kotlin.CoroutineSortingRepository
 
@@ -13,6 +13,6 @@ import org.springframework.data.repository.kotlin.CoroutineSortingRepository
 interface TaskRepository :
     CoroutineCrudRepository<Task, String>,
     CoroutineSortingRepository<Task, String>,
-    TaskFilterRepository {
+    TaskInfraRepository {
     suspend fun findByProjectManagementId(projectId: String): Task?
 }

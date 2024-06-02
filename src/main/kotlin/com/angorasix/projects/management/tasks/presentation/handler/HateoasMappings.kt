@@ -33,7 +33,7 @@ fun TaskDto.resolveHypermedia(
 
     // edit Task
     if (requestingContributor != null && admins != null) {
-        if (admins?.map { it.contributorId }?.contains(requestingContributor.contributorId) == true) {
+        if (admins.map { it.contributorId }.contains(requestingContributor.contributorId)) {
             val editProjectManagementRoute = apiConfigs.routes.updateTask
             val editProjectManagementLink =
                 Link.of(

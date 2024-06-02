@@ -5,10 +5,12 @@ import com.angorasix.commons.infrastructure.constants.AngoraSixInfrastructure
 import com.angorasix.commons.reactive.presentation.error.resolveBadRequest
 import com.angorasix.commons.reactive.presentation.error.resolveNotFound
 import com.angorasix.projects.management.tasks.application.ProjectsManagementTasksService
+import com.angorasix.projects.management.tasks.domain.task.CapsEstimation
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.domain.taskaccounting.TaskAccounting
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.infrastructure.queryfilters.ListTaskFilter
+import com.angorasix.projects.management.tasks.presentation.dto.CapsEstimationDto
 import com.angorasix.projects.management.tasks.presentation.dto.ProjectsManagementTasksQueryParams
 import com.angorasix.projects.management.tasks.presentation.dto.TaskAccountingDto
 import com.angorasix.projects.management.tasks.presentation.dto.TaskDto
@@ -112,51 +114,51 @@ class ProjectManagementTasksHandler(
         }
     }
 
-    /**
-     * Handler for the Update ProjectManagementTask endpoint, retrieving a Mono with the updated ProjectManagementTask.
-     *
-     * @param request - HTTP `ServerRequest` object
-     * @return the `ServerResponse`
-     */
-    suspend fun updateProjectManagementTask(request: ServerRequest): ServerResponse {
-        val requestingContributor =
-            request.attributes()[AngoraSixInfrastructure.REQUEST_ATTRIBUTE_CONTRIBUTOR_KEY]
-
-        return if (requestingContributor is SimpleContributor) {
-            val projectId = request.pathVariable("id")
-
-            val updateProjectManagementTaskData = try {
-                request.awaitBody<TaskDto>()
-                    .let { it.convertToDomain(it.admins ?: emptySet()) }
-            } catch (e: IllegalArgumentException) {
-                return resolveBadRequest(
-                    e.message ?: "Incorrect Project Management body",
-                    "Project Management",
-                )
-            }
-
-            service.updateTask(
-                projectId,
-                updateProjectManagementTaskData,
-                requestingContributor,
-            )?.let {
-                val outputProjectManagementTask =
-                    it.convertToDto(
-                        requestingContributor,
-                        apiConfigs,
-                        request,
-                    )
-
-                ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(outputProjectManagementTask)
-            } ?: resolveNotFound("Can't update this project management", "Project Management")
-        } else {
-            resolveBadRequest("Invalid Contributor Token", "Contributor Token")
-        }
-    }
+//    /**
+//     * Handler for the Update ProjectManagementTask endpoint, retrieving a Mono with the updated ProjectManagementTask.
+//     *
+//     * @param request - HTTP `ServerRequest` object
+//     * @return the `ServerResponse`
+//     */
+//    suspend fun updateProjectManagementTask(request: ServerRequest): ServerResponse {
+//        val requestingContributor =
+//            request.attributes()[AngoraSixInfrastructure.REQUEST_ATTRIBUTE_CONTRIBUTOR_KEY]
+//
+//        return if (requestingContributor is SimpleContributor) {
+//            val projectId = request.pathVariable("id")
+//
+//            val updateProjectManagementTaskData = try {
+//                request.awaitBody<TaskDto>()
+//                    .let { it.convertToDomain(it.admins ?: emptySet()) }
+//            } catch (e: IllegalArgumentException) {
+//                return resolveBadRequest(
+//                    e.message ?: "Incorrect Project Management body",
+//                    "Project Management",
+//                )
+//            }
+//
+//            service.updateTask(
+//                projectId,
+//                updateProjectManagementTaskData,
+//                requestingContributor,
+//            )?.let {
+//                val outputProjectManagementTask =
+//                    it.convertToDto(
+//                        requestingContributor,
+//                        apiConfigs,
+//                        request,
+//                    )
+//
+//                ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(outputProjectManagementTask)
+//            } ?: resolveNotFound("Can't update this project management", "Project Management")
+//        } else {
+//            resolveBadRequest("Invalid Contributor Token", "Contributor Token")
+//        }
+//    }
 }
 
 private fun Task.convertToDto(): TaskDto =
-    TaskDto(projectManagementId, admins, assignees, accounting?.convertToDto(), )
+    TaskDto(projectManagementId, admins, assignees, title, description, estimation?.convertToDto())
 
 private fun Task.convertToDto(
     requestingContributor: SimpleContributor?,
@@ -165,38 +167,52 @@ private fun Task.convertToDto(
 ): TaskDto =
     convertToDto().resolveHypermedia(requestingContributor, apiConfigs, request)
 
-private fun TaskDto.convertToDomain(
+fun TaskDto.convertToDomain(
     admins: Set<SimpleContributor>,
 ): Task {
     if (projectManagementId == null) {
         throw IllegalArgumentException(
             "Invalid ProjectManagementTask -" +
-                "projectManagementId: $projectManagementId"
+                    "projectManagementId: $projectManagementId",
         )
     }
+
     return Task(
         projectManagementId,
         admins,
-        assignees,
-        accounting?.convertToDomain(),
+        assignees ?: emptySet(),
+        title,
+        description,
+        estimation?.convertToDomain(),
+        null,
     )
 }
 
 private fun TaskAccounting.convertToDto(): TaskAccountingDto {
-    return TaskAccountingDto(earnedCaps, redemptionStartInstant, redemptionEndInstant, redemptionFrequency, id)
+    return TaskAccountingDto(taskId, earnedCaps, redemptionStartInstant, redemptionEndInstant, redemptionFrequency, id)
 }
 
 private fun TaskAccountingDto.convertToDomain(): TaskAccounting {
-    if (earnedCaps == null || redemptionStartInstant == null || redemptionEndInstant == null) {
+    if (taskId == null || earnedCaps == null || redemptionStartInstant == null || redemptionEndInstant == null) {
         throw IllegalArgumentException(
             "Invalid TaskAccounting -" +
+                    "taskId: $taskId -" +
                     "earnedCaps: $earnedCaps -" +
                     "instalmentStartInstant: $redemptionStartInstant -" +
                     "instalmentEndInstant: $redemptionEndInstant",
         )
     }
-    return TaskAccounting(earnedCaps, redemptionStartInstant, redemptionEndInstant, emptyList()
+    return TaskAccounting(
+        taskId, earnedCaps, redemptionStartInstant, redemptionEndInstant, emptyList(),
     )
+}
+
+private fun CapsEstimation.convertToDto(): CapsEstimationDto {
+    return CapsEstimationDto(estimatedCaps, effort, difficulty, modifier)
+}
+
+private fun CapsEstimationDto.convertToDomain(): CapsEstimation {
+    return CapsEstimation(estimatedCaps, effort, difficulty, modifier)
 }
 
 private fun MultiValueMap<String, String>.toQueryFilter(): ListTaskFilter {
