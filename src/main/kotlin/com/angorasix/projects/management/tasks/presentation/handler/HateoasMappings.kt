@@ -1,10 +1,10 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
 import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.presentation.dto.TaskDto
 import org.springframework.hateoas.Link
-import org.springframework.hateoas.Links
 import org.springframework.hateoas.mediatype.Affordances
 import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.server.ServerRequest
@@ -19,6 +19,7 @@ import org.springframework.web.util.UriComponentsBuilder
 
 fun TaskDto.resolveHypermedia(
     requestingContributor: SimpleContributor?,
+    task: Task,
     apiConfigs: ApiConfigs,
     request: ServerRequest,
 ): TaskDto {
@@ -31,22 +32,9 @@ fun TaskDto.resolveHypermedia(
         Affordances.of(selfLink).afford(HttpMethod.OPTIONS).withName("default").toLink()
     add(selfLinkWithDefaultAffordance)
 
-    // edit Task
-    if (requestingContributor != null && admins != null) {
-        if (admins.map { it.contributorId }.contains(requestingContributor.contributorId)) {
-            val editProjectManagementRoute = apiConfigs.routes.updateTask
-            val editProjectManagementLink =
-                Link.of(
-                    uriBuilder(request).path(editProjectManagementRoute.resolvePath())
-                        .build().toUriString(),
-                ).withTitle(editProjectManagementRoute.name)
-                    .withName(editProjectManagementRoute.name)
-                    .withRel(editProjectManagementRoute.name).expand(id)
-            val editProjectManagementAffordanceLink =
-                Affordances.of(editProjectManagementLink).afford(HttpMethod.PUT)
-                    .withName(editProjectManagementRoute.name).toLink()
-            add(editProjectManagementAffordanceLink)
-        }
+    if (task.isAdmin(requestingContributor?.contributorId)) {
+        // Here go admin actions
+        task.isAdmin(requestingContributor?.contributorId)
     }
     return this
 }

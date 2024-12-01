@@ -1,46 +1,20 @@
 configs:
   api:
-    headers:
-      contributor: ${A6_PROJECTS_CORE_CONTRIBUTORHEADER:A6-Contributor}
     basePaths:
-      projectsManagement: "/management-core"
+      projectManagementTasks: "/management-tasks"
     routes:
       baseListCrudRoute: ""
       baseByIdCrudRoute: "/{id}"
-      baseByProjectIdCrudRoute: "/project/{projectId}"
-      createProjectManagement:
-        name: createProjectManagement
+      baseByProjectManagementIdCrudRoute: "/project-management/{projectManagementId}"
+      listTasksByProjectManagementId:
+        name: listTasksByProjectManagementId
         basePaths:
-          - ${configs.api.basePaths.projectsManagement}
-        method: POST
-        path: ${configs.api.routes.baseListCrudRoute}
-      createProjectManagementByProjectId:
-        name: createProjectManagementByProjectId
+          - ${configs.api.basePaths.projectManagementTasks}
+        method: GET
+        path: ${configs.api.routes.baseByProjectManagementIdCrudRoute}
+      getTask:
+        name: getTask
         basePaths:
-          - ${configs.api.basePaths.projectsManagement}
-        method: POST
-        path: ${configs.api.routes.baseByProjectIdCrudRoute}
-      updateProjectManagement:
-        name: updateProjectManagement
-        basePaths:
-          - ${configs.api.basePaths.projectsManagement}
-        method: PUT
-        path: ${configs.api.routes.baseByIdCrudRoute}
-      getProjectManagement:
-        name: getProjectManagement
-        basePaths:
-          - ${configs.api.basePaths.projectsManagement}
+          - ${configs.api.basePaths.projectManagementTasks}
         method: GET
         path: ${configs.api.routes.baseByIdCrudRoute}
-      listProjectManagements:
-        name: listProjectManagements
-        basePaths:
-          - ${configs.api.basePaths.projectsManagement}
-        method: GET
-        path: ${configs.api.routes.baseListCrudRoute}
-      getProjectManagementByProjectId:
-        name: getProjectManagementByProjectId
-        basePaths:
-          - ${configs.api.basePaths.projectsManagement}
-        method: GET
-        path: ${configs.api.routes.baseByProjectIdCrudRoute}

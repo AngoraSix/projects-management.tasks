@@ -13,6 +13,4 @@ import org.springframework.data.repository.kotlin.CoroutineSortingRepository
 interface TaskRepository :
     CoroutineCrudRepository<Task, String>,
     CoroutineSortingRepository<Task, String>,
-    TaskInfraRepository {
-    suspend fun findByProjectManagementId(projectId: String): Task?
-}
+    TaskInfraRepository

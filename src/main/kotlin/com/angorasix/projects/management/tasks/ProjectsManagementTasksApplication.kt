@@ -17,7 +17,7 @@ import org.springframework.hateoas.support.WebStack
     stacks = [WebStack.WEBFLUX],
 )
 @ConfigurationPropertiesScan("com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api")
-class ProjectsManagementCoreApplication
+class ProjectsManagementTasksApplication
 
 /**
  * Main application method.
@@ -25,5 +25,5 @@ class ProjectsManagementCoreApplication
  * @param args java args
  */
 fun main(args: Array<String>) {
-    runApplication<ProjectsManagementCoreApplication>(args = args)
+    runApplication<ProjectsManagementTasksApplication>(args = args)
 }

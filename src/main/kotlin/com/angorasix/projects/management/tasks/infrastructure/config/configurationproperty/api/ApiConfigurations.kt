@@ -21,13 +21,12 @@ data class ApiConfigs(
     var basePaths: BasePathConfigs,
 )
 
-data class BasePathConfigs (val projectsManagementTasks: String)
+data class BasePathConfigs(val projectManagementTasks: String)
 
-data class RoutesConfigs (
+data class RoutesConfigs(
     val baseListCrudRoute: String,
     val baseByIdCrudRoute: String,
-    val createTask: Route,
-    val updateTask: Route,
+    val baseByProjectManagementIdCrudRoute: String,
+    val listTasksByProjectManagementId: Route,
     val getTask: Route,
-    val listTasks: Route,
 )

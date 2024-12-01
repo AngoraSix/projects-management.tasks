@@ -15,8 +15,8 @@ jobs:
       id-token: 'write'
     uses: AngoraSix/infra/.github/workflows/action-push-gcp-maven.yml@main
     with:
-      app: projects-management.core
-      cloud-service: projects-management-core
+      app: projects-management.tasks
+      cloud-service: projects-management-tasks
     secrets:
       wif-provider: ${{ secrets.WIF_PROVIDER }}
       wif-service-account: ${{ secrets.WIF_SERVICE_ACCOUNT }}

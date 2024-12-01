@@ -30,7 +30,7 @@ class ProjectManagementTasksSecurityConfiguration {
             exchanges
                 .pathMatchers(
                     HttpMethod.GET,
-                    "/management-core/**",
+                    "/management-tasks/**",
                 ).permitAll()
                 .anyExchange().authenticated()
         }.oauth2ResourceServer { oauth2 -> oauth2.jwt(Customizer.withDefaults()) }

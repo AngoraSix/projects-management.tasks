@@ -5,26 +5,26 @@ import com.angorasix.commons.infrastructure.constants.AngoraSixInfrastructure
 import com.angorasix.commons.reactive.presentation.error.resolveBadRequest
 import com.angorasix.commons.reactive.presentation.error.resolveNotFound
 import com.angorasix.projects.management.tasks.application.ProjectsManagementTasksService
-import com.angorasix.projects.management.tasks.domain.task.CapsEstimation
-import com.angorasix.projects.management.tasks.domain.task.Task
-import com.angorasix.projects.management.tasks.domain.taskaccounting.TaskAccounting
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.infrastructure.queryfilters.ListTaskFilter
-import com.angorasix.projects.management.tasks.presentation.dto.CapsEstimationDto
 import com.angorasix.projects.management.tasks.presentation.dto.ProjectsManagementTasksQueryParams
-import com.angorasix.projects.management.tasks.presentation.dto.TaskAccountingDto
 import com.angorasix.projects.management.tasks.presentation.dto.TaskDto
 import kotlinx.coroutines.flow.map
 import org.springframework.hateoas.IanaLinkRelations
 import org.springframework.hateoas.MediaTypes
 import org.springframework.util.MultiValueMap
-import org.springframework.web.reactive.function.server.*
+import org.springframework.web.reactive.function.server.ServerRequest
+import org.springframework.web.reactive.function.server.ServerResponse
 import org.springframework.web.reactive.function.server.ServerResponse.created
 import org.springframework.web.reactive.function.server.ServerResponse.ok
+import org.springframework.web.reactive.function.server.awaitBody
+import org.springframework.web.reactive.function.server.bodyAndAwait
+import org.springframework.web.reactive.function.server.bodyValueAndAwait
 import java.net.URI
 
 /**
- * ProjectManagementTask Handler (Controller) containing all handler functions related to ProjectManagementTask endpoints.
+ * ProjectManagementTask Handler (Controller) containing all handler functions
+ * related to ProjectManagementTask endpoints.
  *
  * @author rozagerardo
  */
@@ -33,16 +33,19 @@ class ProjectManagementTasksHandler(
     private val apiConfigs: ApiConfigs,
 ) {
     /**
-     * Handler for the List ProjectManagementTasks endpoint,
-     * retrieving a Flux including all persisted ProjectManagementTasks.
+     * Handler for the Get All Integrations for a ProjectManagement endpoint,
+     * even the ones that are not registered yet.
      *
      * @param request - HTTP `ServerRequest` object
      * @return the `ServerResponse`
      */
-    suspend fun listProjectManagementTasks(request: ServerRequest): ServerResponse {
+    suspend fun getTasksByProjectManagementId(request: ServerRequest): ServerResponse {
         val requestingContributor =
             request.attributes()[AngoraSixInfrastructure.REQUEST_ATTRIBUTE_CONTRIBUTOR_KEY]
-        return service.findTasks(request.queryParams().toQueryFilter()).map {
+
+        val projectManagementId = request.pathVariable("projectManagementId")
+        val queryFilter = request.queryParams().toQueryFilter(projectManagementId)
+        return service.findTasks(queryFilter).map {
             it.convertToDto(requestingContributor as? SimpleContributor, apiConfigs, request)
         }.let {
             ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyAndAwait(it)
@@ -67,7 +70,8 @@ class ProjectManagementTasksHandler(
                     apiConfigs,
                     request,
                 )
-            return ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(outputProjectManagementTask)
+            return ok().contentType(MediaTypes.HAL_FORMS_JSON)
+                .bodyValueAndAwait(outputProjectManagementTask)
         }
 
         return resolveNotFound("Can't find Project Management", "Project Management")
@@ -113,110 +117,15 @@ class ProjectManagementTasksHandler(
             resolveBadRequest("Invalid Contributor Token", "Contributor Token")
         }
     }
-
-//    /**
-//     * Handler for the Update ProjectManagementTask endpoint, retrieving a Mono with the updated ProjectManagementTask.
-//     *
-//     * @param request - HTTP `ServerRequest` object
-//     * @return the `ServerResponse`
-//     */
-//    suspend fun updateProjectManagementTask(request: ServerRequest): ServerResponse {
-//        val requestingContributor =
-//            request.attributes()[AngoraSixInfrastructure.REQUEST_ATTRIBUTE_CONTRIBUTOR_KEY]
-//
-//        return if (requestingContributor is SimpleContributor) {
-//            val projectId = request.pathVariable("id")
-//
-//            val updateProjectManagementTaskData = try {
-//                request.awaitBody<TaskDto>()
-//                    .let { it.convertToDomain(it.admins ?: emptySet()) }
-//            } catch (e: IllegalArgumentException) {
-//                return resolveBadRequest(
-//                    e.message ?: "Incorrect Project Management body",
-//                    "Project Management",
-//                )
-//            }
-//
-//            service.updateTask(
-//                projectId,
-//                updateProjectManagementTaskData,
-//                requestingContributor,
-//            )?.let {
-//                val outputProjectManagementTask =
-//                    it.convertToDto(
-//                        requestingContributor,
-//                        apiConfigs,
-//                        request,
-//                    )
-//
-//                ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(outputProjectManagementTask)
-//            } ?: resolveNotFound("Can't update this project management", "Project Management")
-//        } else {
-//            resolveBadRequest("Invalid Contributor Token", "Contributor Token")
-//        }
-//    }
 }
 
-private fun Task.convertToDto(): TaskDto =
-    TaskDto(projectManagementId, admins, assignees, title, description, estimation?.convertToDto())
-
-private fun Task.convertToDto(
-    requestingContributor: SimpleContributor?,
-    apiConfigs: ApiConfigs,
-    request: ServerRequest,
-): TaskDto =
-    convertToDto().resolveHypermedia(requestingContributor, apiConfigs, request)
-
-fun TaskDto.convertToDomain(
-    admins: Set<SimpleContributor>,
-): Task {
-    if (projectManagementId == null) {
-        throw IllegalArgumentException(
-            "Invalid ProjectManagementTask -" +
-                    "projectManagementId: $projectManagementId",
-        )
-    }
-
-    return Task(
-        projectManagementId,
-        admins,
-        assignees ?: emptySet(),
-        title,
-        description,
-        estimation?.convertToDomain(),
-        null,
-    )
-}
-
-private fun TaskAccounting.convertToDto(): TaskAccountingDto {
-    return TaskAccountingDto(taskId, earnedCaps, redemptionStartInstant, redemptionEndInstant, redemptionFrequency, id)
-}
-
-private fun TaskAccountingDto.convertToDomain(): TaskAccounting {
-    if (taskId == null || earnedCaps == null || redemptionStartInstant == null || redemptionEndInstant == null) {
-        throw IllegalArgumentException(
-            "Invalid TaskAccounting -" +
-                    "taskId: $taskId -" +
-                    "earnedCaps: $earnedCaps -" +
-                    "instalmentStartInstant: $redemptionStartInstant -" +
-                    "instalmentEndInstant: $redemptionEndInstant",
-        )
-    }
-    return TaskAccounting(
-        taskId, earnedCaps, redemptionStartInstant, redemptionEndInstant, emptyList(),
-    )
-}
-
-private fun CapsEstimation.convertToDto(): CapsEstimationDto {
-    return CapsEstimationDto(estimatedCaps, effort, difficulty, modifier)
-}
-
-private fun CapsEstimationDto.convertToDomain(): CapsEstimation {
-    return CapsEstimation(estimatedCaps, effort, difficulty, modifier)
-}
-
-private fun MultiValueMap<String, String>.toQueryFilter(): ListTaskFilter {
+private fun MultiValueMap<String, String>.toQueryFilter(projectManagementIds: String? = null): ListTaskFilter {
     return ListTaskFilter(
-        get(ProjectsManagementTasksQueryParams.PROJECT_MANAGEMENT_IDS.param)?.flatMap { it.split(",") },
+        projectManagementIds?.let { listOf(it) }
+            ?: get(ProjectsManagementTasksQueryParams.PROJECT_MANAGEMENT_IDS.param)?.flatMap {
+                it.split(
+                    ",",
+                )
+            },
     )
 }

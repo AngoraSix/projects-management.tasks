@@ -21,20 +21,20 @@ data class TaskRedemption @PersistenceCreator private constructor(
     val redemptionAmount: Double,
     val redemptionCurrency: String,
     val transactionId: String,
-    val date: Instant
+    val date: Instant,
 ) {
     constructor(
         percentage: Double,
         paymentAmount: Double,
         paymentCurrency: String,
         transactionId: String,
-        date: Instant
+        date: Instant,
     ) : this(
         null,
         percentage,
         paymentAmount,
         paymentCurrency,
         transactionId,
-        date
+        date,
     )
 }

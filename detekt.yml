@@ -4,7 +4,7 @@
 #
 #performance:
 #  SpreadOperator:
-#    excludes: ['**/ProjectsCoreApplication.kt', '**/test/**DocsIntegrationTest.kt']
+#    excludes: [''**/test/**DocsIntegrationTest.kt']
 build:
   maxIssues: 0
   excludeCorrectable: false

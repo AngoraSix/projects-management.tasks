@@ -4,9 +4,24 @@ spring:
   cloud:
     stream:
       bindings:
-        mgmtupdate-in-0:
-          destination: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_EVENTS_INPUT_EXCHANGE:mgmt-integrations} # existing exchange (or creates)?
-          group: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_EVENTS_INPUT_QUEUE:tasks.mgmtupdate} # queue = a6-exchange.a6-queue - whole project management update (batch)
+        tasksSyncing-in-0:
+          destination: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_EXCHANGE:mgmtIntegrationSyncing} # existing exchange (or creates)?
+          group: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_QUEUE:tasksSyncing} # queue = a6-exchange.a6-queue - whole project management update (batch)
+          binder: a6Rabbit
+      rabbit:
+        bindings:
+          tasksSyncing-in-0:
+#            producer:
+#              republishToDlq: false
+            consumer:
+              republishToDlq: false
+#              autoBindDlq: false # true: Automatically create and bind DLQ
+#              deadLetterExchange: a6-dlx # The Dead Letter Exchange (DLX)
+#              deadLetterQueueName: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_TASKSSYNCING_DLX_QUEUE:a6-deadletters}
+##              queueArguments:
+##                x-dead-letter-exchange: a6-dlx # Configure the DLX on the main queue
+#              declareExchange: true
+#              exchangeType: fanout # Ensure the type matches the predeclared DLX
       binders:
         a6Rabbit:
           type: rabbit
@@ -19,7 +34,7 @@ spring:
                 password: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_PASSWORD:guest}
                 virtual-host: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_VHOST:/}
     function:
-      definition: projectsmanagement.tasks # to be used if we use Spring Cloud Function support https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/producing-and-consuming-messages.html#spring_cloud_function
+      definition: tasksSyncing # to be used if we use Spring Cloud Function support https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/producing-and-consuming-messages.html#spring_cloud_function
 #    stream:
 #      function:
 #        autodetect: false

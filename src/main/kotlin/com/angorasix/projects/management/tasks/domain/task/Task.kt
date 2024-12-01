@@ -1,12 +1,10 @@
 package com.angorasix.projects.management.tasks.domain.task
 
 import com.angorasix.commons.domain.SimpleContributor
-import com.angorasix.commons.infrastructure.integrations.SourcedContributorWrapper
-import com.angorasix.projects.management.tasks.domain.taskaccounting.TaskAccounting
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
-import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.mapping.Document
+import java.time.Instant
 
 /**
  * <p>
@@ -16,33 +14,43 @@ import org.springframework.data.mongodb.core.mapping.Document
  * @author rozagerardoO
  */
 @Document
-data class Task @PersistenceCreator public constructor(
+data class Task @PersistenceCreator constructor(
     @field:Id val id: String?,
     val projectManagementId: String,
-    val admins: Set<SimpleContributor> = emptySet(),
-    var assignees: Set<SourcedContributorWrapper> = emptySet(),
     val title: String,
     val description: String = "",
-    val estimation: CapsEstimation?,
-    @Transient val sourceTaskId: String? = null
-    // assignee, status (? or simply if earned caps has value?)
+    val admins: Set<SimpleContributor> = emptySet(),
+    var assigneeIds: Set<String> = emptySet(),
+    val done: Boolean = false,
+    val dueInstant: Instant? = null,
+    val estimation: CapsEstimation? = null,
 ) {
     constructor(
         projectManagementId: String,
-        admins: Set<SimpleContributor> = emptySet(),
-        assignees: Set<SourcedContributorWrapper> = emptySet(),
         title: String,
         description: String = "",
-        estimation: CapsEstimation?,
-        sourceId: String?
+        admins: Set<SimpleContributor> = emptySet(),
+        assigneeIds: Set<String> = emptySet(),
+        done: Boolean = false,
+        dueInstant: Instant? = null,
+        estimation: CapsEstimation? = null,
     ) : this(
         null,
         projectManagementId,
-        admins,
-        assignees,
         title,
         description,
+        admins,
+        assigneeIds,
+        done,
+        dueInstant,
         estimation,
-        sourceId
     )
+
+    /**
+     * Checks whether a particular contributor is Admin of this Task.
+     *
+     * @param contributorId - contributor candidate to check.
+     */
+    fun isAdmin(contributorId: String?): Boolean =
+        (contributorId != null).and(admins.any { it.contributorId == contributorId })
 }
