@@ -1,0 +1,20 @@
+configs:
+  api:
+    basePaths:
+      projectManagementTasks: "/management-tasks"
+    routes:
+      baseListCrudRoute: ""
+      baseByIdCrudRoute: "/{id}"
+      baseByProjectManagementIdCrudRoute: "/project-management/{projectManagementId}"
+      listTasksByProjectManagementId:
+        name: listTasksByProjectManagementId
+        basePaths:
+          - ${configs.api.basePaths.projectManagementTasks}
+        method: GET
+        path: ${configs.api.routes.baseByProjectManagementIdCrudRoute}
+      getTask:
+        name: getTask
+        basePaths:
+          - ${configs.api.basePaths.projectManagementTasks}
+        method: GET
+        path: ${configs.api.routes.baseByIdCrudRoute}
