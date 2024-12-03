@@ -20,6 +20,7 @@ fun Task.convertToDto(): TaskDto =
         done,
         dueInstant,
         estimation?.convertToDto(),
+        integrationId,
     )
 
 fun Task.convertToDto(
@@ -41,6 +42,7 @@ fun TaskDto.convertToDomain(
         done,
         dueInstant,
         estimation?.convertToDomain(),
+        integrationId,
     )
 }
 

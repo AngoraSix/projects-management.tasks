@@ -14,10 +14,11 @@ data class TaskDto(
     val title: String,
     val description: String = "",
     val admins: Set<SimpleContributor> = emptySet(),
-    var assigneeIds: Set<String> = emptySet(),
+    val assigneeIds: Set<String> = emptySet(),
     val done: Boolean = false,
     val dueInstant: Instant? = null,
     val estimation: CapsEstimationDto? = null,
+    val integrationId: String? = null,
     val id: String? = null,
 ) : RepresentationModel<TaskDto>()
 
