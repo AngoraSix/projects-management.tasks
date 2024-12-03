@@ -16,7 +16,7 @@ import org.springframework.hateoas.support.WebStack
     type = [EnableHypermediaSupport.HypermediaType.HAL_FORMS],
     stacks = [WebStack.WEBFLUX],
 )
-@ConfigurationPropertiesScan("com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api")
+@ConfigurationPropertiesScan("com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty")
 class ProjectsManagementTasksApplication
 
 /**

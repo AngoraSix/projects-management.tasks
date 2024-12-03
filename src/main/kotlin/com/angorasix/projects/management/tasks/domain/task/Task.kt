@@ -3,6 +3,7 @@ package com.angorasix.projects.management.tasks.domain.task
 import com.angorasix.commons.domain.SimpleContributor
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
+import org.springframework.data.annotation.Transient
 import org.springframework.data.mongodb.core.mapping.Document
 import java.time.Instant
 
@@ -24,6 +25,7 @@ data class Task @PersistenceCreator constructor(
     val done: Boolean = false,
     val dueInstant: Instant? = null,
     val estimation: CapsEstimation? = null,
+    @Transient val integrationId: String? = null,
 ) {
     constructor(
         projectManagementId: String,
@@ -34,6 +36,7 @@ data class Task @PersistenceCreator constructor(
         done: Boolean = false,
         dueInstant: Instant? = null,
         estimation: CapsEstimation? = null,
+        integrationId: String? = null,
     ) : this(
         null,
         projectManagementId,
@@ -44,6 +47,7 @@ data class Task @PersistenceCreator constructor(
         done,
         dueInstant,
         estimation,
+        integrationId,
     )
 
     /**

@@ -1,27 +1,29 @@
 # https://docs.spring.io/spring-cloud-stream/reference/rabbit/rabbit_overview/putting-it-all-together.html#page-title
+configs:
+  amqp:
+    bindings:
+      syncingCorrespondence: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_BINDINGS_SYNCCORRESPONDENCE:syncingCorrespondence}
 
 spring:
   cloud:
     stream:
+      output-bindings: # we need explicit bindings bc we use StreamBridge
+        - ${configs.amqp.bindings.syncingCorrespondence}
       bindings:
+        syncingCorrespondence:
+          destination: ${A6_MGMT_TASKS_RABBITMQ_OUTPUT_SYNCCORRESPONDENCE_EXCHANGE:syncingCorrespondence} # existing exchange
         tasksSyncing-in-0:
-          destination: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_EXCHANGE:mgmtIntegrationSyncing} # existing exchange (or creates)?
-          group: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_QUEUE:tasksSyncing} # queue = a6-exchange.a6-queue - whole project management update (batch)
+          destination: ${A6_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_EXCHANGE:mgmtIntegrationSyncing} # existing exchange (or creates)?
+          group: ${A6_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_QUEUE:tasksSyncing} # queue = a6-exchange.a6-queue - whole project management update (batch)
           binder: a6Rabbit
       rabbit:
         bindings:
           tasksSyncing-in-0:
-#            producer:
-#              republishToDlq: false
             consumer:
               republishToDlq: false
-#              autoBindDlq: false # true: Automatically create and bind DLQ
-#              deadLetterExchange: a6-dlx # The Dead Letter Exchange (DLX)
-#              deadLetterQueueName: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_TASKSSYNCING_DLX_QUEUE:a6-deadletters}
-##              queueArguments:
-##                x-dead-letter-exchange: a6-dlx # Configure the DLX on the main queue
-#              declareExchange: true
-#              exchangeType: fanout # Ensure the type matches the predeclared DLX
+          syncingCorrespondence:
+            producer:
+              republishToDlq: false
       binders:
         a6Rabbit:
           type: rabbit
@@ -35,17 +37,3 @@ spring:
                 virtual-host: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_VHOST:/}
     function:
       definition: tasksSyncing # to be used if we use Spring Cloud Function support https://docs.spring.io/spring-cloud-stream/reference/spring-cloud-stream/producing-and-consuming-messages.html#spring_cloud_function
-#    stream:
-#      function:
-#        autodetect: false
-#          consumer:
-#            max-attempts: 1
-      #          binder: a6Rabbit
-#      rabbit:
-#        bindings:
-#          notifications-in-0:
-##            consumer:
-##              bindingRoutingKey: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_INPUT_ROUTINGKEY:#} # defaults to '#'
-#              auto-bind-dlq: true
-#              dlq-ttl: true
-#              dlq-dead-letter-exchange:
