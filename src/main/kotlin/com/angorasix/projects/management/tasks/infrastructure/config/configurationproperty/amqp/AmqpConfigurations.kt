@@ -18,5 +18,5 @@ data class AmqpConfigurations(
 )
 
 class BindingConfigs(
-    val syncingCorrespondence: String,
+    val mgmtTasksSyncing: String,
 )

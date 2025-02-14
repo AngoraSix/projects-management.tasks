@@ -50,7 +50,7 @@ class ProjectsManagementTasksMessagingHandler(
 
             publishSyncTasksCorrespondence(
                 persistedTasks,
-                amqpConfigs.bindings.syncingCorrespondence,
+                amqpConfigs.bindings.mgmtTasksSyncing,
                 message.objectId,
                 projectManagementId,
                 requestingContributor,
