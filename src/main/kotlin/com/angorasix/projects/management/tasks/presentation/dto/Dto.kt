@@ -23,10 +23,14 @@ data class TaskDto(
 ) : RepresentationModel<TaskDto>()
 
 data class CapsEstimationDto(
-    val estimatedCaps: Double,
+    val caps: Double? = null,
+    val strategy: String? = null,
+
     val effort: Double? = null,
-    val difficulty: Double? = null,
-    val modifier: Double? = null,
+    val complexity: Double? = null,
+    val industry: String? = null,
+    val industryModifier: Double? = null,
+    val moneyPayment: Double? = null,
 )
 
 data class TaskAccountingDto(

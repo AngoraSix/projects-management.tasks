@@ -24,7 +24,7 @@ data class Task @PersistenceCreator constructor(
     var assigneeIds: Set<String> = emptySet(),
     val done: Boolean = false,
     val dueInstant: Instant? = null,
-    val estimation: CapsEstimation? = null,
+    val estimations: TaskEstimations? = null,
     @Transient val integrationId: String? = null,
 ) {
     constructor(
@@ -35,7 +35,7 @@ data class Task @PersistenceCreator constructor(
         assigneeIds: Set<String> = emptySet(),
         done: Boolean = false,
         dueInstant: Instant? = null,
-        estimation: CapsEstimation? = null,
+        estimations: TaskEstimations? = null,
         integrationId: String? = null,
     ) : this(
         null,
@@ -46,7 +46,7 @@ data class Task @PersistenceCreator constructor(
         assigneeIds,
         done,
         dueInstant,
-        estimation,
+        estimations,
         integrationId,
     )
 

@@ -1,8 +1,8 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
 import com.angorasix.commons.domain.SimpleContributor
-import com.angorasix.projects.management.tasks.domain.task.CapsEstimation
 import com.angorasix.projects.management.tasks.domain.task.Task
+import com.angorasix.projects.management.tasks.domain.task.TaskEstimations
 import com.angorasix.projects.management.tasks.domain.taskaccounting.TaskAccounting
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.presentation.dto.CapsEstimationDto
@@ -19,7 +19,7 @@ fun Task.convertToDto(): TaskDto =
         assigneeIds,
         done,
         dueInstant,
-        estimation?.convertToDto(),
+        estimations?.convertToDto(),
         integrationId,
     )
 
@@ -71,10 +71,26 @@ fun TaskAccountingDto.convertToDomain(): TaskAccounting {
     )
 }
 
-fun CapsEstimation.convertToDto(): CapsEstimationDto {
-    return CapsEstimationDto(estimatedCaps, effort, difficulty, modifier)
+fun TaskEstimations.convertToDto(): CapsEstimationDto {
+    return CapsEstimationDto(
+        caps = caps,
+        strategy = strategy,
+        effort = effort,
+        complexity = complexity,
+        industry = industry,
+        industryModifier = industryModifier,
+        moneyPayment = moneyPayment,
+    )
 }
 
-fun CapsEstimationDto.convertToDomain(): CapsEstimation {
-    return CapsEstimation(estimatedCaps, effort, difficulty, modifier)
+fun CapsEstimationDto.convertToDomain(): TaskEstimations {
+    return TaskEstimations(
+        caps = caps,
+        strategy = strategy,
+        effort = effort,
+        complexity = complexity,
+        industry = industry,
+        industryModifier = industryModifier,
+        moneyPayment = moneyPayment,
+    )
 }

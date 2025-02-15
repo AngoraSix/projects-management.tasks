@@ -2,16 +2,16 @@
 configs:
   amqp:
     bindings:
-      syncingCorrespondence: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_BINDINGS_SYNCCORRESPONDENCE:syncingCorrespondence}
+      mgmtTasksSyncing: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_BINDINGS_MGMTTASKSSYNCING:mgmtTasksSyncing}
 
 spring:
   cloud:
     stream:
       output-bindings: # we need explicit bindings bc we use StreamBridge
-        - ${configs.amqp.bindings.syncingCorrespondence}
+        - ${configs.amqp.bindings.mgmtTasksSyncing}
       bindings:
-        syncingCorrespondence:
-          destination: ${A6_MGMT_TASKS_RABBITMQ_OUTPUT_SYNCCORRESPONDENCE_EXCHANGE:syncingCorrespondence} # existing exchange
+        mgmtTasksSyncing:
+          destination: ${A6_MGMT_TASKS_RABBITMQ_OUTPUT_MGMTTASKSSYNCING_EXCHANGE:mgmtTasksSyncing} # existing exchange
         tasksSyncing-in-0:
           destination: ${A6_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_EXCHANGE:mgmtIntegrationSyncing} # existing exchange (or creates)?
           group: ${A6_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_QUEUE:tasksSyncing} # queue = a6-exchange.a6-queue - whole project management update (batch)
@@ -21,7 +21,7 @@ spring:
           tasksSyncing-in-0:
             consumer:
               republishToDlq: false
-          syncingCorrespondence:
+          mgmtTasksSyncing:
             producer:
               republishToDlq: false
       binders:
