@@ -1,8 +1,8 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
 import com.angorasix.commons.domain.SimpleContributor
-import com.angorasix.projects.management.tasks.domain.task.TaskEstimations
 import com.angorasix.projects.management.tasks.domain.task.Task
+import com.angorasix.projects.management.tasks.domain.task.TaskEstimations
 import com.angorasix.projects.management.tasks.domain.taskaccounting.TaskAccounting
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.presentation.dto.CapsEstimationDto

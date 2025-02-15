@@ -101,10 +101,10 @@ private fun A6InfraTaskDto.toDomain(
 ): Task {
     return Task(
         id = angorasixId,
-        projectManagementId= projectManagementId,
-        title= title,
-        description= description ?: "",
-        admins= setOf(requestingContributor),
+        projectManagementId = projectManagementId,
+        title = title,
+        description = description ?: "",
+        admins = setOf(requestingContributor),
         assigneeIds = assigneeIds,
         done = done,
         dueInstant = dueInstant,
@@ -134,4 +134,3 @@ private fun A6InfraMessageDto.extractInfraTaskDtos(
     val tasks = objectMapper.readValue(tasksJson, infraTaskDtoListType)
     return tasks
 }
-
