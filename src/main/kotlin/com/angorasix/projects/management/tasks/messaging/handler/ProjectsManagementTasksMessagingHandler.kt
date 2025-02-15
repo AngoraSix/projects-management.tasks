@@ -6,11 +6,13 @@ import com.angorasix.commons.infrastructure.intercommunication.dto.A6DomainResou
 import com.angorasix.commons.infrastructure.intercommunication.dto.A6InfraTopics
 import com.angorasix.commons.infrastructure.intercommunication.dto.domainresources.A6InfraBulkResourceDto
 import com.angorasix.commons.infrastructure.intercommunication.dto.domainresources.A6InfraTaskDto
+import com.angorasix.commons.infrastructure.intercommunication.dto.domainresources.A6InfraTaskEstimationDto
 import com.angorasix.commons.infrastructure.intercommunication.dto.messaging.A6InfraMessageDto
 import com.angorasix.commons.infrastructure.intercommunication.dto.syncing.A6InfraBulkSyncingCorrespondenceDto
 import com.angorasix.commons.infrastructure.intercommunication.dto.syncing.A6InfraSyncingCorrespondenceDto
 import com.angorasix.projects.management.tasks.application.ProjectsManagementTasksService
 import com.angorasix.projects.management.tasks.domain.task.Task
+import com.angorasix.projects.management.tasks.domain.task.TaskEstimations
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.amqp.AmqpConfigurations
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
@@ -98,16 +100,28 @@ private fun A6InfraTaskDto.toDomain(
     requestingContributor: SimpleContributor,
 ): Task {
     return Task(
-        angorasixId,
-        projectManagementId,
-        title,
-        description ?: "",
-        setOf(requestingContributor),
-        assigneeIds,
-        done,
-        dueInstant,
-        null,
-        integrationId,
+        id = angorasixId,
+        projectManagementId= projectManagementId,
+        title= title,
+        description= description ?: "",
+        admins= setOf(requestingContributor),
+        assigneeIds = assigneeIds,
+        done = done,
+        dueInstant = dueInstant,
+        estimations = estimations?.toDomain(),
+        integrationId = integrationId,
+    )
+}
+
+private fun A6InfraTaskEstimationDto.toDomain(): TaskEstimations {
+    return TaskEstimations(
+        caps = caps,
+        strategy = strategy,
+        effort = effort,
+        complexity = complexity,
+        industry = industry,
+        industryModifier = industryModifier,
+        moneyPayment = moneyPayment,
     )
 }
 
@@ -120,3 +134,4 @@ private fun A6InfraMessageDto.extractInfraTaskDtos(
     val tasks = objectMapper.readValue(tasksJson, infraTaskDtoListType)
     return tasks
 }
+
