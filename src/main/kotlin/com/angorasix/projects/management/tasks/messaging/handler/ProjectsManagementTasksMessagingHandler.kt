@@ -34,62 +34,66 @@ class ProjectsManagementTasksMessagingHandler(
     private val streamBridge: StreamBridge,
     private val amqpConfigs: AmqpConfigurations,
 ) {
-    fun tasksSyncing(message: A6InfraMessageDto) = runBlocking {
-        if (message.topic == A6InfraTopics.TASKS_INTEGRATION_FULL_SYNCING.value &&
-            message.targetType == A6DomainResource.ProjectManagement &&
-            message.objectType == A6DomainResource.IntegrationSourceSync.value
-        ) {
-            val projectManagementId = message.targetId
-            val requestingContributor = message.requestingContributor
-            val infraTaskDtos = message.extractInfraTaskDtos(objectMapper)
+    fun tasksSyncing(message: A6InfraMessageDto) =
+        runBlocking {
+            if (message.topic == A6InfraTopics.TASKS_INTEGRATION_FULL_SYNCING.value &&
+                message.targetType == A6DomainResource.ProjectManagement &&
+                message.objectType == A6DomainResource.IntegrationSourceSync.value
+            ) {
+                val projectManagementId = message.targetId
+                val requestingContributor = message.requestingContributor
+                val infraTaskDtos = message.extractInfraTaskDtos(objectMapper)
 
-            val infraTasks =
-                infraTaskDtos.map { it.toDomain(projectManagementId, requestingContributor) }
+                val infraTasks =
+                    infraTaskDtos.map { it.toDomain(projectManagementId, requestingContributor) }
 
-            val persistedTasks = projectsManagementTasksService.processTasks(
-                infraTasks,
-            )
+                val persistedTasks =
+                    projectsManagementTasksService.processTasks(
+                        infraTasks,
+                    )
 
-            publishSyncTasksCorrespondence(
-                persistedTasks,
-                amqpConfigs.bindings.mgmtTasksSyncing,
-                message.objectId,
-                projectManagementId,
-                requestingContributor,
-            )
+                publishSyncTasksCorrespondence(
+                    persistedTasks,
+                    amqpConfigs.bindings.mgmtTasksSyncing,
+                    message.objectId,
+                    projectManagementId,
+                    requestingContributor,
+                )
+            }
         }
-    }
 
     private fun publishSyncTasksCorrespondence(
         persistedTasks: List<Task>,
         bindingKey: String,
-        sourceSyncId: String,
+        objectId: String, // Trello-wi7feDfZ
         projectManagementId: String,
         requestingContributor: DetailedContributor,
     ) {
         if (persistedTasks.isNotEmpty()) {
-            val messageData = A6InfraBulkSyncingCorrespondenceDto(
-                A6InfraTaskDto::class.java.name,
-                A6DomainResource.Task,
-                persistedTasks.map {
-                    requireNotNull(it.integrationId)
-                    requireNotNull(it.id)
-                    A6InfraSyncingCorrespondenceDto(it.integrationId, it.id)
-                },
-            )
+            val messageData =
+                A6InfraBulkSyncingCorrespondenceDto(
+                    A6InfraTaskDto::class.java.name,
+                    A6DomainResource.Task,
+                    persistedTasks.map {
+                        requireNotNull(it.integrationId)
+                        requireNotNull(it.id)
+                        A6InfraSyncingCorrespondenceDto(it.integrationId, it.id)
+                    },
+                )
             streamBridge.send(
                 bindingKey,
-                MessageBuilder.withPayload(
-                    A6InfraMessageDto(
-                        sourceSyncId,
-                        A6DomainResource.IntegrationSourceSync,
-                        projectManagementId,
-                        A6DomainResource.ProjectManagement.value,
-                        A6InfraTopics.TASKS_INTEGRATION_SYNCING_CORRESPONDENCE.value,
-                        requestingContributor,
-                        messageData.toMap(),
-                    ),
-                ).build(),
+                MessageBuilder
+                    .withPayload(
+                        A6InfraMessageDto(
+                            objectId,
+                            A6DomainResource.IntegrationSourceSync,
+                            projectManagementId,
+                            A6DomainResource.ProjectManagement.value,
+                            A6InfraTopics.TASKS_INTEGRATION_SYNCING_CORRESPONDENCE.value,
+                            requestingContributor,
+                            messageData.toMap(),
+                        ),
+                    ).build(),
             )
         }
     }
@@ -98,8 +102,8 @@ class ProjectsManagementTasksMessagingHandler(
 private fun A6InfraTaskDto.toDomain(
     projectManagementId: String,
     requestingContributor: SimpleContributor,
-): Task {
-    return Task(
+): Task =
+    Task(
         id = angorasixId,
         projectManagementId = projectManagementId,
         title = title,
@@ -111,10 +115,9 @@ private fun A6InfraTaskDto.toDomain(
         estimations = estimations?.toDomain(),
         integrationId = integrationId,
     )
-}
 
-private fun A6InfraTaskEstimationDto.toDomain(): TaskEstimations {
-    return TaskEstimations(
+private fun A6InfraTaskEstimationDto.toDomain(): TaskEstimations =
+    TaskEstimations(
         caps = caps,
         strategy = strategy,
         effort = effort,
@@ -123,11 +126,8 @@ private fun A6InfraTaskEstimationDto.toDomain(): TaskEstimations {
         industryModifier = industryModifier,
         moneyPayment = moneyPayment,
     )
-}
 
-private fun A6InfraMessageDto.extractInfraTaskDtos(
-    objectMapper: ObjectMapper,
-): List<A6InfraTaskDto> {
+private fun A6InfraMessageDto.extractInfraTaskDtos(objectMapper: ObjectMapper): List<A6InfraTaskDto> {
     val bulkTasks = A6InfraBulkResourceDto.fromMap<A6DomainResource.Task>(messageData)
 
     val tasksJson = objectMapper.writeValueAsString(bulkTasks.collection)
