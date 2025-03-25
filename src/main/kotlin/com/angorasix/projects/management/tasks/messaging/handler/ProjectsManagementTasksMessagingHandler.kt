@@ -52,8 +52,22 @@ class ProjectsManagementTasksMessagingHandler(
                         infraTasks,
                     )
 
+                if (infraTaskDtos.size != persistedTasks.size) {
+                    throw IllegalStateException("Mismatch in number of tasks for [${message.objectId}]")
+                }
+
+                val correspondence =
+                    A6InfraBulkSyncingCorrespondenceDto(
+                        A6InfraTaskDto::class.java.name,
+                        A6DomainResource.Task,
+                        persistedTasks.zip(infraTaskDtos) { persistedTask, messageTaskDto ->
+                            requireNotNull(persistedTask.id)
+                            A6InfraSyncingCorrespondenceDto(messageTaskDto.integrationId, persistedTask.id)
+                        },
+                    )
+
                 publishSyncTasksCorrespondence(
-                    persistedTasks,
+                    correspondence,
                     amqpConfigs.bindings.mgmtTasksSyncing,
                     message.objectId,
                     projectManagementId,
@@ -63,23 +77,13 @@ class ProjectsManagementTasksMessagingHandler(
         }
 
     private fun publishSyncTasksCorrespondence(
-        persistedTasks: List<Task>,
+        correspondence: A6InfraBulkSyncingCorrespondenceDto,
         bindingKey: String,
         objectId: String, // Trello-wi7feDfZ
         projectManagementId: String,
         requestingContributor: DetailedContributor,
     ) {
-        if (persistedTasks.isNotEmpty()) {
-            val messageData =
-                A6InfraBulkSyncingCorrespondenceDto(
-                    A6InfraTaskDto::class.java.name,
-                    A6DomainResource.Task,
-                    persistedTasks.map {
-                        requireNotNull(it.integrationId)
-                        requireNotNull(it.id)
-                        A6InfraSyncingCorrespondenceDto(it.integrationId, it.id)
-                    },
-                )
+        if (correspondence.collection.isNotEmpty()) {
             streamBridge.send(
                 bindingKey,
                 MessageBuilder
@@ -91,7 +95,7 @@ class ProjectsManagementTasksMessagingHandler(
                             A6DomainResource.ProjectManagement.value,
                             A6InfraTopics.TASKS_INTEGRATION_SYNCING_CORRESPONDENCE.value,
                             requestingContributor,
-                            messageData.toMap(),
+                            correspondence.toMap(),
                         ),
                     ).build(),
             )
@@ -113,7 +117,6 @@ private fun A6InfraTaskDto.toDomain(
         done = done,
         dueInstant = dueInstant,
         estimations = estimations?.toDomain(),
-        integrationId = integrationId,
     )
 
 private fun A6InfraTaskEstimationDto.toDomain(): TaskEstimations =

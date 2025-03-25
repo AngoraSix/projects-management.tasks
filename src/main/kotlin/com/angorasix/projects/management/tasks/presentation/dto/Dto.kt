@@ -16,16 +16,15 @@ data class TaskDto(
     val admins: Set<SimpleContributor> = emptySet(),
     val assigneeIds: Set<String> = emptySet(),
     val done: Boolean = false,
+    val doneInstant: Instant? = null,
     val dueInstant: Instant? = null,
     val estimation: CapsEstimationDto? = null,
-    val integrationId: String? = null,
     val id: String? = null,
 ) : RepresentationModel<TaskDto>()
 
 data class CapsEstimationDto(
     val caps: Double? = null,
     val strategy: String? = null,
-
     val effort: Double? = null,
     val complexity: Double? = null,
     val industry: String? = null,
