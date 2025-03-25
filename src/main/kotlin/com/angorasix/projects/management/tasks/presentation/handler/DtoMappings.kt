@@ -18,36 +18,31 @@ fun Task.convertToDto(): TaskDto =
         admins,
         assigneeIds,
         done,
+        doneInstant,
         dueInstant,
         estimations?.convertToDto(),
-        integrationId,
     )
 
 fun Task.convertToDto(
     requestingContributor: SimpleContributor?,
     apiConfigs: ApiConfigs,
     request: ServerRequest,
-): TaskDto =
-    convertToDto().resolveHypermedia(requestingContributor, this, apiConfigs, request)
+): TaskDto = convertToDto().resolveHypermedia(requestingContributor, this, apiConfigs, request)
 
-fun TaskDto.convertToDomain(
-    admins: Set<SimpleContributor>,
-): Task {
-    return Task(
+fun TaskDto.convertToDomain(admins: Set<SimpleContributor>): Task =
+    Task(
         projectManagementId,
         title,
         description,
         admins,
         assigneeIds,
         done,
+        doneInstant,
         dueInstant,
-        estimation?.convertToDomain(),
-        integrationId,
     )
-}
 
-fun TaskAccounting.convertToDto(): TaskAccountingDto {
-    return TaskAccountingDto(
+fun TaskAccounting.convertToDto(): TaskAccountingDto =
+    TaskAccountingDto(
         taskId,
         earnedCaps,
         redemptionStartInstant,
@@ -55,7 +50,6 @@ fun TaskAccounting.convertToDto(): TaskAccountingDto {
         redemptionFrequency,
         id,
     )
-}
 
 fun TaskAccountingDto.convertToDomain(): TaskAccounting {
     requireNotNull(taskId)
@@ -71,8 +65,8 @@ fun TaskAccountingDto.convertToDomain(): TaskAccounting {
     )
 }
 
-fun TaskEstimations.convertToDto(): CapsEstimationDto {
-    return CapsEstimationDto(
+fun TaskEstimations.convertToDto(): CapsEstimationDto =
+    CapsEstimationDto(
         caps = caps,
         strategy = strategy,
         effort = effort,
@@ -81,10 +75,9 @@ fun TaskEstimations.convertToDto(): CapsEstimationDto {
         industryModifier = industryModifier,
         moneyPayment = moneyPayment,
     )
-}
 
-fun CapsEstimationDto.convertToDomain(): TaskEstimations {
-    return TaskEstimations(
+fun CapsEstimationDto.convertToDomain(): TaskEstimations =
+    TaskEstimations(
         caps = caps,
         strategy = strategy,
         effort = effort,
@@ -93,4 +86,3 @@ fun CapsEstimationDto.convertToDomain(): TaskEstimations {
         industryModifier = industryModifier,
         moneyPayment = moneyPayment,
     )
-}
