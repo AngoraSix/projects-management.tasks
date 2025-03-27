@@ -8,7 +8,7 @@ import org.springframework.hateoas.Link
 import org.springframework.hateoas.mediatype.Affordances
 import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.util.UriComponentsBuilder
+import org.springframework.web.util.ForwardedHeaderUtils
 
 /**
  * <p>
@@ -26,10 +26,17 @@ fun TaskDto.resolveHypermedia(
     val getSingleRoute = apiConfigs.routes.getTask
     // self
     val selfLink =
-        Link.of(uriBuilder(request).path(getSingleRoute.resolvePath()).build().toUriString())
-            .withRel(getSingleRoute.name).expand(id).withSelfRel()
+        Link
+            .of(uriBuilder(request).path(getSingleRoute.resolvePath()).build().toUriString())
+            .withRel(getSingleRoute.name)
+            .expand(id)
+            .withSelfRel()
     val selfLinkWithDefaultAffordance =
-        Affordances.of(selfLink).afford(HttpMethod.OPTIONS).withName("default").toLink()
+        Affordances
+            .of(selfLink)
+            .afford(HttpMethod.OPTIONS)
+            .withName("default")
+            .toLink()
     add(selfLinkWithDefaultAffordance)
 
     if (task.isAdmin(requestingContributor?.contributorId)) {
@@ -39,7 +46,10 @@ fun TaskDto.resolveHypermedia(
     return this
 }
 
-private fun uriBuilder(request: ServerRequest) = request.requestPath().contextPath().let {
-    UriComponentsBuilder.fromHttpRequest(request.exchange().request).replacePath(it.toString()) //
-        .replaceQuery("")
-}
+private fun uriBuilder(request: ServerRequest) =
+    request.requestPath().contextPath().let {
+        ForwardedHeaderUtils
+            .adaptFromForwardedHeaders(request.exchange().request.uri, request.exchange().request.headers)
+            .replacePath(it.toString())
+            .replaceQuery("")
+    }

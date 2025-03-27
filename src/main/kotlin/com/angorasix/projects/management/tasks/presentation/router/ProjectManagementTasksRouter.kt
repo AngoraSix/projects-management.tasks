@@ -22,25 +22,31 @@ class ProjectManagementTasksRouter(
      *
      * @return the [RouterFunction] with all the routes for ProjectManagements
      */
-    fun mgmtTasksRouterFunction() = coRouter {
-        apiConfigs.basePaths.projectManagementTasks.nest {
-            filter { request, next ->
-                extractRequestingContributor(
-                    request,
-                    next,
-                )
-            }
-            apiConfigs.routes.baseByProjectManagementIdCrudRoute.nest {
-                defineByProjectManagementIdRoutes()
+    fun mgmtTasksRouterFunction() =
+        coRouter {
+            apiConfigs.basePaths.projectManagementTasks.nest {
+                filter { request, next ->
+                    extractRequestingContributor(
+                        request,
+                        next,
+                    )
+                }
+                apiConfigs.basePaths.baseByProjectManagementIdCrudRoute.nest {
+                    defineByProjectManagementIdRoutes()
+                }
             }
         }
-    }
 
     private fun CoRouterFunctionDsl.defineByProjectManagementIdRoutes() {
-        method(apiConfigs.routes.listTasksByProjectManagementId.method).nest {
+        method(
+            apiConfigs.routes.listTasksByProjectManagementId.method,
+            handler::getTasksByProjectManagementId,
+        )
+
+        path(apiConfigs.routes.getProjectManagementTaskStats.path).nest {
             method(
-                apiConfigs.routes.listTasksByProjectManagementId.method,
-                handler::getTasksByProjectManagementId,
+                apiConfigs.routes.getProjectManagementTaskStats.method,
+                handler::getProjectManagementTaskStats,
             )
         }
     }

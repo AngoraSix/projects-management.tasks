@@ -16,20 +16,18 @@ import org.springframework.data.mongodb.core.query.Query
  *
  * @author rozagerardo
  */
-class TaskInfraRepositoryImpl(val mongoOps: ReactiveMongoOperations) :
-    TaskInfraRepository {
-
-    override fun findUsingFilter(filter: ListTaskFilter): Flow<Task> {
-        return mongoOps.find(filter.toQuery(), Task::class.java).asFlow()
-    }
+class TaskInfraRepositoryImpl(
+    val mongoOps: ReactiveMongoOperations,
+) : TaskInfraRepository {
+    override fun findUsingFilter(filter: ListTaskFilter): Flow<Task> = mongoOps.find(filter.toQuery(), Task::class.java).asFlow()
 
     override suspend fun findForContributorUsingFilter(
         filter: ListTaskFilter,
         requestingContributor: SimpleContributor?,
-    ): Task? {
-        return mongoOps.find(filter.toQuery(requestingContributor), Task::class.java)
+    ): Task? =
+        mongoOps
+            .find(filter.toQuery(requestingContributor), Task::class.java)
             .awaitFirstOrNull()
-    }
 }
 
 private fun ListTaskFilter.toQuery(requestingContributor: SimpleContributor? = null): Query {

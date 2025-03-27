@@ -15,26 +15,28 @@ import java.time.Instant
  * @author rozagerardo
  */
 @Document
-data class TaskRedemption @PersistenceCreator private constructor(
-    @field:Id val id: String?,
-    val percentage: Double,
-    val redemptionAmount: Double,
-    val redemptionCurrency: String,
-    val transactionId: String,
-    val date: Instant,
-) {
-    constructor(
-        percentage: Double,
-        paymentAmount: Double,
-        paymentCurrency: String,
-        transactionId: String,
-        date: Instant,
-    ) : this(
-        null,
-        percentage,
-        paymentAmount,
-        paymentCurrency,
-        transactionId,
-        date,
-    )
-}
+data class TaskRedemption
+    @PersistenceCreator
+    private constructor(
+        @field:Id val id: String?,
+        val percentage: Double,
+        val redemptionAmount: Double,
+        val redemptionCurrency: String,
+        val transactionId: String,
+        val date: Instant,
+    ) {
+        constructor(
+            percentage: Double,
+            paymentAmount: Double,
+            paymentCurrency: String,
+            transactionId: String,
+            date: Instant,
+        ) : this(
+            null,
+            percentage,
+            paymentAmount,
+            paymentCurrency,
+            transactionId,
+            date,
+        )
+    }

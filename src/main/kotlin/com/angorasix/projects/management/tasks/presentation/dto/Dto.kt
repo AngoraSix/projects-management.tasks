@@ -32,6 +32,11 @@ data class CapsEstimationDto(
     val moneyPayment: Double? = null,
 )
 
+data class ProjectManagementTaskStatsDto(
+    val project: String? = null,
+    val contributor: String? = null,
+)
+
 data class TaskAccountingDto(
     val taskId: String? = null,
     val earnedCaps: Double? = null,

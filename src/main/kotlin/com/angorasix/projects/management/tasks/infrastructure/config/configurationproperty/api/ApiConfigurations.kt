@@ -13,20 +13,21 @@ import org.springframework.boot.context.properties.NestedConfigurationProperty
  */
 @ConfigurationProperties(prefix = "configs.api")
 data class ApiConfigs(
-
     @NestedConfigurationProperty
     var routes: RoutesConfigs,
-
     @NestedConfigurationProperty
     var basePaths: BasePathConfigs,
 )
 
-data class BasePathConfigs(val projectManagementTasks: String)
-
-data class RoutesConfigs(
+data class BasePathConfigs(
+    val projectManagementTasks: String,
     val baseListCrudRoute: String,
     val baseByIdCrudRoute: String,
     val baseByProjectManagementIdCrudRoute: String,
-    val listTasksByProjectManagementId: Route,
+)
+
+data class RoutesConfigs(
     val getTask: Route,
+    val listTasksByProjectManagementId: Route,
+    val getProjectManagementTaskStats: Route,
 )
