@@ -73,13 +73,14 @@ fun TasksStats.convertToDto(): TasksStatsDto =
         recentlyCompletedCount,
         completedCount,
         totalCount,
+        totalEffort,
+        totalDoneEffort,
     )
 
 fun ContributorStats.convertToDto(): ContributorStatsDto =
     ContributorStatsDto(
         contributorId,
         tasks.convertToDto(),
-        totalEffort,
     )
 
 fun TaskAccounting.convertToDto(): TaskAccountingDto =

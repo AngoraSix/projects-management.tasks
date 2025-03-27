@@ -48,7 +48,10 @@ class TaskInfraRepositoryImpl(
             .find(filter.toQuery(requestingContributor), Task::class.java)
             .awaitFirstOrNull()
 
-    override suspend fun resolveStatsUsingFilter(filter: ListTaskFilter): ProjectManagementTaskStats {
+    override suspend fun resolveStatsUsingFilter(
+        filter: ListTaskFilter,
+        requestingContributor: SimpleContributor?,
+    ): ProjectManagementTaskStats {
         // Assume filter.projectManagementIds is a non-empty list; take the first value.
         val projectManagementId =
             filter.projectManagementIds?.firstOrNull()
@@ -81,8 +84,18 @@ class TaskInfraRepositoryImpl(
                         ).then(1)
                         .otherwise(0),
                 ).`as`("recentlyCompletedCount")
+                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0.0))
+                .`as`("totalEffort")
+                .sum(
+                    ConditionalOperators
+                        .`when`(
+                            Criteria.where("done").`is`(true),
+                        ).thenValueOf("\$estimations.effort")
+                        .otherwise(0.0),
+                ).`as`("totalDoneEffort")
 
-        val projectProjection: ProjectionOperation = project("totalCount", "completedCount", "recentlyCompletedCount")
+        val projectProjection: ProjectionOperation =
+            project("totalCount", "completedCount", "recentlyCompletedCount", "totalEffort", "totalDoneEffort")
 
         // --- Facet: Contributor-level Stats ---
         // Unwind the assigneeIds so each contributor assignment becomes a separate document.
@@ -107,8 +120,15 @@ class TaskInfraRepositoryImpl(
                         ).then(1)
                         .otherwise(0),
                 ).`as`("recentlyCompletedCount")
-                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0))
+                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0.0))
                 .`as`("totalEffort")
+                .sum(
+                    ConditionalOperators
+                        .`when`(
+                            Criteria.where("done").`is`(true),
+                        ).thenValueOf("\$estimations.effort")
+                        .otherwise(0.0),
+                ).`as`("totalDoneEffort")
 
         val contributorProjection: ProjectionOperation =
             project()
@@ -122,6 +142,8 @@ class TaskInfraRepositoryImpl(
                 .`as`("recentlyCompletedCount")
                 .and("totalEffort")
                 .`as`("totalEffort")
+                .and("totalDoneEffort")
+                .`as`("totalDoneEffort")
                 .andExclude("_id")
 
         // Build the facet operation:
@@ -150,7 +172,7 @@ class TaskInfraRepositoryImpl(
                 projectManagementId = projectManagementId,
                 project =
                     ProjectStats(
-                        tasks = TasksStats(0, 0, 0),
+                        tasks = TasksStats(0, 0, 0, 0.0, 0.0),
                         contributors = emptyList(),
                     ),
             )
@@ -168,17 +190,16 @@ class TaskInfraRepositoryImpl(
                     recentlyCompletedCount = proj.getInteger("recentlyCompletedCount", 0),
                     completedCount = proj.getInteger("completedCount", 0),
                     totalCount = proj.getInteger("totalCount", 0),
+                    totalEffort = proj.getDouble("totalEffort") ?: 0.0,
+                    totalDoneEffort = proj.getDouble("totalDoneEffort") ?: 0.0,
                 )
             } else {
-                TasksStats(0, 0, 0)
+                TasksStats(0, 0, 0, 0.0, 0.0)
             }
 
         // Map contributor facet results.
         val contributorStats =
             contributorStatsList.map { doc ->
-                println("ATRODENNNN")
-                println(doc)
-                println(doc.toJson())
                 ContributorStats(
                     contributorId = doc.getString("contributorId"),
                     tasks =
@@ -186,8 +207,9 @@ class TaskInfraRepositoryImpl(
                             recentlyCompletedCount = doc.getInteger("recentlyCompletedCount", 0),
                             completedCount = doc.getInteger("completedCount", 0),
                             totalCount = doc.getInteger("totalCount", 0),
+                            totalEffort = doc.getDouble("totalEffort") ?: 0.0,
+                            totalDoneEffort = doc.getDouble("totalDoneEffort") ?: 0.0,
                         ),
-                    totalEffort = doc.getDouble("totalEffort") ?: 0.0,
                 )
             }
 
@@ -201,7 +223,7 @@ class TaskInfraRepositoryImpl(
         return ProjectManagementTaskStats(
             projectManagementId = projectManagementId,
             project = projectStats,
-            contributor = null, // or choose one if needed
+            contributor = requestingContributor?.contributorId?.let { contributorStats.firstOrNull { c -> c.contributorId == it } },
         )
     }
 }

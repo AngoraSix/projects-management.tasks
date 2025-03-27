@@ -47,12 +47,13 @@ data class TasksStatsDto(
     val recentlyCompletedCount: Int,
     val completedCount: Int,
     val totalCount: Int,
+    val totalEffort: Double,
+    val totalDoneEffort: Double,
 )
 
 data class ContributorStatsDto(
     val contributorId: String,
     val tasks: TasksStatsDto,
-    val totalEffort: Double,
 )
 
 data class TaskAccountingDto(

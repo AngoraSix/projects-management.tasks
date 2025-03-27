@@ -20,5 +20,8 @@ interface TaskInfraRepository {
         requestingContributor: SimpleContributor?,
     ): Task?
 
-    suspend fun resolveStatsUsingFilter(filter: ListTaskFilter): ProjectManagementTaskStats
+    suspend fun resolveStatsUsingFilter(
+        filter: ListTaskFilter,
+        requestingContributor: SimpleContributor?,
+    ): ProjectManagementTaskStats
 }
