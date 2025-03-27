@@ -3,6 +3,8 @@ package com.angorasix.projects.management.tasks.presentation.handler
 import com.angorasix.commons.domain.SimpleContributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
+import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
+import com.angorasix.projects.management.tasks.presentation.dto.ProjectManagementTaskStatsDto
 import com.angorasix.projects.management.tasks.presentation.dto.TaskDto
 import org.springframework.hateoas.Link
 import org.springframework.hateoas.mediatype.Affordances
@@ -43,6 +45,31 @@ fun TaskDto.resolveHypermedia(
         // Here go admin actions
         task.isAdmin(requestingContributor?.contributorId)
     }
+    return this
+}
+
+fun ProjectManagementTaskStatsDto.resolveHypermedia(
+    requestingContributor: SimpleContributor?,
+    projectManagementTaskStats: ProjectManagementTaskStats,
+    apiConfigs: ApiConfigs,
+    request: ServerRequest,
+): ProjectManagementTaskStatsDto {
+    val getSingleRoute = apiConfigs.routes.getProjectManagementTaskStats
+    // self
+    val selfLink =
+        Link
+            .of(uriBuilder(request).path(getSingleRoute.resolvePath()).build().toUriString())
+            .withRel(getSingleRoute.name)
+            .expand(projectManagementTaskStats.projectManagementId)
+            .withSelfRel()
+    val selfLinkWithDefaultAffordance =
+        Affordances
+            .of(selfLink)
+            .afford(HttpMethod.OPTIONS)
+            .withName("default")
+            .toLink()
+    add(selfLinkWithDefaultAffordance)
+
     return this
 }
 

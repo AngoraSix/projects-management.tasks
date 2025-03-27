@@ -1,8 +1,9 @@
-context:
-  initializer:
-    classes: com.angorasix.projects.management.tasks.BeansInitializer
 server:
   port: ${A6_PROJECTS_MGMT_TASKS_PORT:10301}
+
+logging:
+  level:
+    root: DEBUG
 
 spring:
   config:

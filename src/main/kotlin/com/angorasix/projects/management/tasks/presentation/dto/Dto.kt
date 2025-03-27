@@ -33,8 +33,26 @@ data class CapsEstimationDto(
 )
 
 data class ProjectManagementTaskStatsDto(
-    val project: String? = null,
-    val contributor: String? = null,
+    val projectManagementId: String,
+    val project: ProjectStatsDto,
+    val contributor: ContributorStatsDto? = null,
+) : RepresentationModel<ProjectManagementTaskStatsDto>()
+
+data class ProjectStatsDto(
+    val tasks: TasksStatsDto,
+    val contributors: List<ContributorStatsDto> = emptyList(),
+)
+
+data class TasksStatsDto(
+    val recentlyCompletedCount: Int,
+    val completedCount: Int,
+    val totalCount: Int,
+)
+
+data class ContributorStatsDto(
+    val contributorId: String,
+    val tasks: TasksStatsDto,
+    val totalEffort: Double,
 )
 
 data class TaskAccountingDto(

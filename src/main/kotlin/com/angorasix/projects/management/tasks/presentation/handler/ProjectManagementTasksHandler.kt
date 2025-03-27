@@ -56,14 +56,19 @@ class ProjectManagementTasksHandler(
      * @return the `ServerResponse`
      */
     suspend fun getProjectManagementTaskStats(request: ServerRequest): ServerResponse {
+        println("GERGERGERSISISI")
         val requestingContributor =
             request.attributes()[AngoraSixInfrastructure.REQUEST_ATTRIBUTE_CONTRIBUTOR_KEY]
 
         val projectManagementId = request.pathVariable("projectManagementId")
         val queryFilter = request.queryParams().toQueryFilter(projectManagementId)
 
-        // TBD
-        return ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait("TBD")
+        return service
+            .resolveProjectManagementTasksStats(queryFilter)
+            .convertToDto(requestingContributor as? SimpleContributor, apiConfigs, request)
+            .let {
+                ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(it)
+            }
     }
 
     /**

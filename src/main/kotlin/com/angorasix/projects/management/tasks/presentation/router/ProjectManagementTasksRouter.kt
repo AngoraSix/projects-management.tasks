@@ -38,16 +38,15 @@ class ProjectManagementTasksRouter(
         }
 
     private fun CoRouterFunctionDsl.defineByProjectManagementIdRoutes() {
-        method(
-            apiConfigs.routes.listTasksByProjectManagementId.method,
-            handler::getTasksByProjectManagementId,
-        )
-
         path(apiConfigs.routes.getProjectManagementTaskStats.path).nest {
             method(
                 apiConfigs.routes.getProjectManagementTaskStats.method,
                 handler::getProjectManagementTaskStats,
             )
         }
+        method(
+            apiConfigs.routes.listTasksByProjectManagementId.method,
+            handler::getTasksByProjectManagementId,
+        )
     }
 }
