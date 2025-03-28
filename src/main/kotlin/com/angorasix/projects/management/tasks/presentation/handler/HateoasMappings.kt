@@ -70,6 +70,11 @@ fun ProjectManagementTaskStatsDto.resolveHypermedia(
             .toLink()
     add(selfLinkWithDefaultAffordance)
 
+    requestingContributor?.let {
+        // Here go admin actions
+        add(selfLinkWithDefaultAffordance)
+    }
+
     return this
 }
 
