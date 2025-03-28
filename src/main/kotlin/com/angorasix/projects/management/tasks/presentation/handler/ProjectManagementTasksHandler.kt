@@ -63,7 +63,7 @@ class ProjectManagementTasksHandler(
         val queryFilter = request.queryParams().toQueryFilter(projectManagementId)
 
         return service
-            .resolveProjectManagementTasksStats(queryFilter, requestingContributor = requestingContributor as SimpleContributor?)
+            .resolveProjectManagementTasksStats(filter = queryFilter, requestingContributor = requestingContributor as SimpleContributor?)
             .convertToDto(requestingContributor, apiConfigs, request)
             .let {
                 ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(it)
@@ -99,10 +99,12 @@ class ProjectManagementTasksHandler(
 
 private fun MultiValueMap<String, String>.toQueryFilter(projectManagementIds: String? = null): ListTaskFilter =
     ListTaskFilter(
-        projectManagementIds?.let { listOf(it) }
-            ?: get(ProjectsManagementTasksQueryParams.PROJECT_MANAGEMENT_IDS.param)?.flatMap {
-                it.split(
-                    ",",
-                )
-            },
+        projectManagementIds =
+            projectManagementIds?.let { listOf(it) }
+                ?: get(ProjectsManagementTasksQueryParams.PROJECT_MANAGEMENT_IDS.param)?.flatMap {
+                    it.split(
+                        ",",
+                    )
+                },
+        recentPeriodDays = getFirst(ProjectsManagementTasksQueryParams.RECENT_PERIOD_DAYS.param)?.toLongOrNull(),
     )

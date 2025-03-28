@@ -19,10 +19,10 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregat
 import org.springframework.data.mongodb.core.aggregation.Aggregation.project
 import org.springframework.data.mongodb.core.aggregation.Aggregation.unwind
 import org.springframework.data.mongodb.core.aggregation.ConditionalOperators
-import org.springframework.data.mongodb.core.aggregation.FacetOperation
 import org.springframework.data.mongodb.core.aggregation.GroupOperation
 import org.springframework.data.mongodb.core.aggregation.MatchOperation
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation
+import org.springframework.data.mongodb.core.aggregation.UnwindOperation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
@@ -52,137 +52,41 @@ class TaskInfraRepositoryImpl(
         filter: ListTaskFilter,
         requestingContributor: SimpleContributor?,
     ): ProjectManagementTaskStats {
-        // Assume filter.projectManagementIds is a non-empty list; take the first value.
+        // 1. Get the projectManagementId from filter.
         val projectManagementId =
             filter.projectManagementIds?.firstOrNull()
                 ?: throw IllegalArgumentException("Project management id is required for stats")
+        // 2. Define a threshold for "recent" (in days).
+        val recentThreshold = Instant.now().minus(filter.recentPeriodDays ?: RECENT_PERIOD_DAYS_DEFAULT, ChronoUnit.DAYS)
+        // 3. Build aggregation stages.
+        val matchStage = buildMatchStage(projectManagementId)
+        val (projectGroup, projectProjection) = buildProjectFacet(recentThreshold)
+        val (unwindAssignees, contributorGroup, contributorProjection) = buildContributorFacet(recentThreshold)
 
-        // Define a threshold for "recently completed" tasks (e.g. tasks completed within the last 7 days)
-        val recentThreshold = Instant.now().minus(7, ChronoUnit.DAYS)
-
-        // Match stage: select tasks for the given projectManagementId.
-        val matchStage: MatchOperation = match(Criteria.where("projectManagementId").`is`(projectManagementId))
-
-        // --- Facet: Project-level Stats ---
-        val projectGroup: GroupOperation =
-            group()
-                .count()
-                .`as`("totalCount")
-                .sum(ConditionalOperators.`when`(Criteria.where("done").`is`(true)).then(1).otherwise(0))
-                .`as`("completedCount")
-                .sum(
-                    ConditionalOperators
-                        .`when`(
-                            Criteria().andOperator(
-                                Criteria
-                                    .where("done")
-                                    .`is`(true),
-                                Criteria
-                                    .where("doneInstant")
-                                    .gte(recentThreshold),
-                            ),
-                        ).then(1)
-                        .otherwise(0),
-                ).`as`("recentlyCompletedCount")
-                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0.0))
-                .`as`("totalEffort")
-                .sum(
-                    ConditionalOperators
-                        .`when`(
-                            Criteria.where("done").`is`(true),
-                        ).thenValueOf("\$estimations.effort")
-                        .otherwise(0.0),
-                ).`as`("totalDoneEffort")
-
-        val projectProjection: ProjectionOperation =
-            project("totalCount", "completedCount", "recentlyCompletedCount", "totalEffort", "totalDoneEffort")
-
-        // --- Facet: Contributor-level Stats ---
-        // Unwind the assigneeIds so each contributor assignment becomes a separate document.
-        val unwindAssignees = unwind("assigneeIds")
-        val contributorGroup: GroupOperation =
-            group("assigneeIds")
-                .count()
-                .`as`("totalCount")
-                .sum(ConditionalOperators.`when`(Criteria.where("done").`is`(true)).then(1).otherwise(0))
-                .`as`("completedCount")
-                .sum(
-                    ConditionalOperators
-                        .`when`(
-                            Criteria().andOperator(
-                                Criteria
-                                    .where("done")
-                                    .`is`(true),
-                                Criteria
-                                    .where("doneInstant")
-                                    .gte(recentThreshold),
-                            ),
-                        ).then(1)
-                        .otherwise(0),
-                ).`as`("recentlyCompletedCount")
-                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0.0))
-                .`as`("totalEffort")
-                .sum(
-                    ConditionalOperators
-                        .`when`(
-                            Criteria.where("done").`is`(true),
-                        ).thenValueOf("\$estimations.effort")
-                        .otherwise(0.0),
-                ).`as`("totalDoneEffort")
-
-        val contributorProjection: ProjectionOperation =
-            project()
-                .and("_id")
-                .`as`("contributorId")
-                .andExpression("totalCount")
-                .`as`("totalCount")
-                .andExpression("completedCount")
-                .`as`("completedCount")
-                .andExpression("recentlyCompletedCount")
-                .`as`("recentlyCompletedCount")
-                .and("totalEffort")
-                .`as`("totalEffort")
-                .and("totalDoneEffort")
-                .`as`("totalDoneEffort")
-                .andExclude("_id")
-
-        // Build the facet operation:
-        val facet: FacetOperation =
+        val facetOperation =
             facet(projectGroup, projectProjection)
                 .`as`("projectStats")
                 .and(unwindAssignees, contributorGroup, contributorProjection)
                 .`as`("contributorStats")
 
-        // Overall aggregation pipeline:
-        val aggregation =
-            newAggregation(
-                matchStage,
-                facet,
-            )
+        val aggregation = newAggregation(matchStage, facetOperation)
 
-        // Execute the aggregation on the "task" collection.
-        val aggResults =
-            mongoOps
-                .aggregate(aggregation, "task", Document::class.java)
-                .awaitFirstOrNull() // assume a single result document from the facet stage
+        // 4. Execute the aggregation.
+        val aggResult = mongoOps.aggregate(aggregation, "task", Document::class.java).awaitFirstOrNull()
 
-        // If no result is returned, assume zero counts.
-        if (aggResults == null) {
+        // 5. If no results, return a zero-stats domain object.
+        if (aggResult == null) {
             return ProjectManagementTaskStats(
                 projectManagementId = projectManagementId,
-                project =
-                    ProjectStats(
-                        tasks = TasksStats(0, 0, 0, 0.0, 0.0),
-                        contributors = emptyList(),
-                    ),
+                project = ProjectStats(tasks = TasksStats(0, 0, 0, 0.0, 0.0), contributors = emptyList()),
             )
         }
 
-        // Extract the facet results.
-        val projectStatsList: List<Document> = aggResults.getList("projectStats", Document::class.java)
-        val contributorStatsList: List<Document> = aggResults.getList("contributorStats", Document::class.java)
+        // 6. Extract facet results.
+        val projectStatsList = aggResult.getList("projectStats", Document::class.java)
+        val contributorStatsList = aggResult.getList("contributorStats", Document::class.java)
 
-        // Build ProjectStats from projectStats facet.
+        // 7. Map results.
         val projectTasksStats =
             if (projectStatsList.isNotEmpty()) {
                 val proj = projectStatsList.first()
@@ -197,7 +101,6 @@ class TaskInfraRepositoryImpl(
                 TasksStats(0, 0, 0, 0.0, 0.0)
             }
 
-        // Map contributor facet results.
         val contributorStats =
             contributorStatsList.map { doc ->
                 ContributorStats(
@@ -213,18 +116,100 @@ class TaskInfraRepositoryImpl(
                 )
             }
 
-        // Construct the final domain object.
-        val projectStats =
-            ProjectStats(
-                tasks = projectTasksStats,
-                contributors = contributorStats,
-            )
-
+        // 8. Build the final domain object.
         return ProjectManagementTaskStats(
             projectManagementId = projectManagementId,
-            project = projectStats,
-            contributor = requestingContributor?.contributorId?.let { contributorStats.firstOrNull { c -> c.contributorId == it } },
+            project = ProjectStats(tasks = projectTasksStats, contributors = contributorStats),
+            contributor =
+                requestingContributor?.contributorId?.let { id ->
+                    contributorStats.firstOrNull { it.contributorId == id }
+                },
         )
+    }
+
+    // --- Private helper functions ---
+
+    private fun buildMatchStage(projectManagementId: String): MatchOperation =
+        match(Criteria.where("projectManagementId").`is`(projectManagementId))
+
+    private fun buildProjectFacet(recentThreshold: Instant): Pair<GroupOperation, ProjectionOperation> {
+        val groupOp =
+            group()
+                .count()
+                .`as`("totalCount")
+                .sum(ConditionalOperators.`when`(Criteria.where("done").`is`(true)).then(1).otherwise(0))
+                .`as`("completedCount")
+                .sum(
+                    ConditionalOperators
+                        .`when`(
+                            Criteria().andOperator(
+                                Criteria.where("done").`is`(true),
+                                Criteria.where("doneInstant").gte(recentThreshold),
+                            ),
+                        ).then(1)
+                        .otherwise(0),
+                ).`as`("recentlyCompletedCount")
+                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0.0))
+                .`as`("totalEffort")
+                .sum(
+                    ConditionalOperators
+                        .`when`(Criteria.where("done").`is`(true))
+                        .thenValueOf("\$estimations.effort")
+                        .otherwise(0.0),
+                ).`as`("totalDoneEffort")
+
+        val projectionOp = project("totalCount", "completedCount", "recentlyCompletedCount", "totalEffort", "totalDoneEffort")
+        return Pair(groupOp, projectionOp)
+    }
+
+    private fun buildContributorFacet(recentThreshold: Instant): Triple<UnwindOperation, GroupOperation, ProjectionOperation> {
+        val unwindOp = unwind("assigneeIds")
+        val groupOp =
+            group("assigneeIds")
+                .count()
+                .`as`("totalCount")
+                .sum(ConditionalOperators.`when`(Criteria.where("done").`is`(true)).then(1).otherwise(0))
+                .`as`("completedCount")
+                .sum(
+                    ConditionalOperators
+                        .`when`(
+                            Criteria().andOperator(
+                                Criteria.where("done").`is`(true),
+                                Criteria.where("doneInstant").gte(recentThreshold),
+                            ),
+                        ).then(1)
+                        .otherwise(0),
+                ).`as`("recentlyCompletedCount")
+                .sum(ConditionalOperators.IfNull.ifNull("\$estimations.effort").then(0.0))
+                .`as`("totalEffort")
+                .sum(
+                    ConditionalOperators
+                        .`when`(Criteria.where("done").`is`(true))
+                        .thenValueOf("\$estimations.effort")
+                        .otherwise(0.0),
+                ).`as`("totalDoneEffort")
+
+        val projectionOp =
+            project()
+                .and("_id")
+                .`as`("contributorId")
+                .andExpression("totalCount")
+                .`as`("totalCount")
+                .andExpression("completedCount")
+                .`as`("completedCount")
+                .andExpression("recentlyCompletedCount")
+                .`as`("recentlyCompletedCount")
+                .and("totalEffort")
+                .`as`("totalEffort")
+                .and("totalDoneEffort")
+                .`as`("totalDoneEffort")
+                .andExclude("_id")
+
+        return Triple(unwindOp, groupOp, projectionOp)
+    }
+
+    companion object {
+        const val RECENT_PERIOD_DAYS_DEFAULT = 31L
     }
 }
 
