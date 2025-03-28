@@ -13,27 +13,29 @@ import java.time.Instant
  * @author rozagerardo
  */
 @Document
-data class TaskAccounting @PersistenceCreator private constructor(
-    @field:Id val id: String?,
-    val taskId: String,
-    val earnedCaps: Double,
-    val redemptionStartInstant: Instant,
-    val redemptionEndInstant: Instant,
-    val redemptions: List<TaskRedemption>,
-    val redemptionFrequency: String = "daily",
-) {
-    constructor(
-        taskId: String,
-        earnedCaps: Double,
-        redemptionStartInstant: Instant,
-        redemptionEndInstant: Instant,
-        redemptions: List<TaskRedemption> = emptyList(),
-    ) : this(
-        null,
-        taskId,
-        earnedCaps,
-        redemptionStartInstant,
-        redemptionEndInstant,
-        redemptions,
-    )
-}
+data class TaskAccounting
+    @PersistenceCreator
+    private constructor(
+        @field:Id val id: String?,
+        val taskId: String,
+        val earnedCaps: Double,
+        val redemptionStartInstant: Instant,
+        val redemptionEndInstant: Instant,
+        val redemptions: List<TaskRedemption>,
+        val redemptionFrequency: String = "daily",
+    ) {
+        constructor(
+            taskId: String,
+            earnedCaps: Double,
+            redemptionStartInstant: Instant,
+            redemptionEndInstant: Instant,
+            redemptions: List<TaskRedemption> = emptyList(),
+        ) : this(
+            null,
+            taskId,
+            earnedCaps,
+            redemptionStartInstant,
+            redemptionEndInstant,
+            redemptions,
+        )
+    }

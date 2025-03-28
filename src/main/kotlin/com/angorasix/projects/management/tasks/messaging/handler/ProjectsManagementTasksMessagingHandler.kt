@@ -53,7 +53,7 @@ class ProjectsManagementTasksMessagingHandler(
                     )
 
                 if (infraTaskDtos.size != persistedTasks.size) {
-                    throw IllegalStateException("Mismatch in number of tasks for [${message.objectId}]")
+                    error("Mismatch in number of tasks for [${message.objectId}]")
                 }
 
                 val correspondence =
