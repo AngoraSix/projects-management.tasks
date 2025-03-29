@@ -16,7 +16,8 @@ data class TasksStats(
     val completedCount: Int,
     val totalCount: Int,
     val totalEffort: Double,
-    val totalDoneEffort: Double,
+    val completedEffort: Double,
+    val recentlyCompletedEffort: Double,
 )
 
 data class ContributorStats(

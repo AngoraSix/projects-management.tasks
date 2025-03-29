@@ -12,4 +12,5 @@ data class ListTaskFilter(
     val adminId: Set<String>? = null,
     val ids: Collection<String>? = null, // task ids
     val recentPeriodDays: Long? = null,
+    val sortField: String? = null,
 )
