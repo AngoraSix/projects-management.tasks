@@ -10,4 +10,5 @@ enum class ProjectsManagementTasksQueryParams(
 ) {
     PROJECT_MANAGEMENT_IDS("projectManagementIds"),
     RECENT_PERIOD_DAYS("recentPeriodDays"),
+    SORT_FIELD("sortField"),
 }

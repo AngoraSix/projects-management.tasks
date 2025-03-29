@@ -72,7 +72,8 @@ fun TasksStats.convertToDto(): TasksStatsDto =
         completedCount,
         totalCount,
         totalEffort,
-        totalDoneEffort,
+        completedEffort,
+        recentlyCompletedEffort,
     )
 
 fun ContributorStats.convertToDto(): ContributorStatsDto =

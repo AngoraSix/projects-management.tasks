@@ -107,4 +107,5 @@ private fun MultiValueMap<String, String>.toQueryFilter(projectManagementIds: St
                     )
                 },
         recentPeriodDays = getFirst(ProjectsManagementTasksQueryParams.RECENT_PERIOD_DAYS.param)?.toLongOrNull(),
+        sortField = getFirst(ProjectsManagementTasksQueryParams.SORT_FIELD.param),
     )

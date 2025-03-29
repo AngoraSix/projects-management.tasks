@@ -11,18 +11,20 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.reactive.asFlow
 import kotlinx.coroutines.reactive.awaitFirstOrNull
 import org.bson.Document
+import org.springframework.data.domain.Sort
 import org.springframework.data.mongodb.core.ReactiveMongoOperations
 import org.springframework.data.mongodb.core.aggregation.Aggregation.facet
 import org.springframework.data.mongodb.core.aggregation.Aggregation.group
 import org.springframework.data.mongodb.core.aggregation.Aggregation.match
 import org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation
 import org.springframework.data.mongodb.core.aggregation.Aggregation.project
+import org.springframework.data.mongodb.core.aggregation.Aggregation.sort
 import org.springframework.data.mongodb.core.aggregation.Aggregation.unwind
+import org.springframework.data.mongodb.core.aggregation.AggregationOperation
 import org.springframework.data.mongodb.core.aggregation.ConditionalOperators
 import org.springframework.data.mongodb.core.aggregation.GroupOperation
 import org.springframework.data.mongodb.core.aggregation.MatchOperation
 import org.springframework.data.mongodb.core.aggregation.ProjectionOperation
-import org.springframework.data.mongodb.core.aggregation.UnwindOperation
 import org.springframework.data.mongodb.core.query.Criteria
 import org.springframework.data.mongodb.core.query.Criteria.where
 import org.springframework.data.mongodb.core.query.Query
@@ -53,21 +55,23 @@ class TaskInfraRepositoryImpl(
         requestingContributor: SimpleContributor?,
     ): ProjectManagementTaskStats {
         // 1. Get the projectManagementId from filter.
-        val projectManagementId =
-            filter.projectManagementIds?.firstOrNull()
-                ?: throw IllegalArgumentException("Project management id is required for stats")
+        val projectManagementId = extractProjectManagementId(filter)
         // 2. Define a threshold for "recent" (in days).
         val recentThreshold = Instant.now().minus(filter.recentPeriodDays ?: RECENT_PERIOD_DAYS_DEFAULT, ChronoUnit.DAYS)
         // 3. Build aggregation stages.
         val matchStage = buildMatchStage(projectManagementId)
         val (projectGroup, projectProjection) = buildProjectFacet(recentThreshold)
-        val (unwindAssignees, contributorGroup, contributorProjection) = buildContributorFacet(recentThreshold)
+        val buildContributorFacetOps = buildContributorFacet(recentThreshold, filter.sortField)
 
         val facetOperation =
             facet(projectGroup, projectProjection)
                 .`as`("projectStats")
-                .and(unwindAssignees, contributorGroup, contributorProjection)
-                .`as`("contributorStats")
+                .and(
+                    buildContributorFacetOps.component1(),
+                    buildContributorFacetOps.component2(),
+                    buildContributorFacetOps.component3(),
+                    buildContributorFacetOps.component4(),
+                ).`as`("contributorStats")
 
         val aggregation = newAggregation(matchStage, facetOperation)
 
@@ -78,7 +82,7 @@ class TaskInfraRepositoryImpl(
         if (aggResult == null) {
             return ProjectManagementTaskStats(
                 projectManagementId = projectManagementId,
-                project = ProjectStats(tasks = TasksStats(0, 0, 0, 0.0, 0.0), contributors = emptyList()),
+                project = ProjectStats(tasks = TasksStats(0, 0, 0, 0.0, 0.0, 0.0), contributors = emptyList()),
             )
         }
 
@@ -87,19 +91,7 @@ class TaskInfraRepositoryImpl(
         val contributorStatsList = aggResult.getList("contributorStats", Document::class.java)
 
         // 7. Map results.
-        val projectTasksStats =
-            if (projectStatsList.isNotEmpty()) {
-                val proj = projectStatsList.first()
-                TasksStats(
-                    recentlyCompletedCount = proj.getInteger("recentlyCompletedCount", 0),
-                    completedCount = proj.getInteger("completedCount", 0),
-                    totalCount = proj.getInteger("totalCount", 0),
-                    totalEffort = proj.getDouble("totalEffort") ?: 0.0,
-                    totalDoneEffort = proj.getDouble("totalDoneEffort") ?: 0.0,
-                )
-            } else {
-                TasksStats(0, 0, 0, 0.0, 0.0)
-            }
+        val projectTasksStats = mapProjectTasksStats(projectStatsList)
 
         val contributorStats =
             contributorStatsList.map { doc ->
@@ -111,7 +103,8 @@ class TaskInfraRepositoryImpl(
                             completedCount = doc.getInteger("completedCount", 0),
                             totalCount = doc.getInteger("totalCount", 0),
                             totalEffort = doc.getDouble("totalEffort") ?: 0.0,
-                            totalDoneEffort = doc.getDouble("totalDoneEffort") ?: 0.0,
+                            completedEffort = doc.getDouble("completedEffort") ?: 0.0,
+                            recentlyCompletedEffort = doc.getDouble("recentlyCompletedEffort") ?: 0.0,
                         ),
                 )
             }
@@ -128,6 +121,10 @@ class TaskInfraRepositoryImpl(
     }
 
     // --- Private helper functions ---
+
+    private fun extractProjectManagementId(filter: ListTaskFilter): String =
+        filter.projectManagementIds?.firstOrNull()
+            ?: throw IllegalArgumentException("Project management id is required for stats")
 
     private fun buildMatchStage(projectManagementId: String): MatchOperation =
         match(Criteria.where("projectManagementId").`is`(projectManagementId))
@@ -156,13 +153,27 @@ class TaskInfraRepositoryImpl(
                         .`when`(Criteria.where("done").`is`(true))
                         .thenValueOf("\$estimations.effort")
                         .otherwise(0.0),
-                ).`as`("totalDoneEffort")
+                ).`as`("completedEffort")
+                .sum(
+                    ConditionalOperators
+                        .`when`(
+                            Criteria().andOperator(
+                                Criteria.where("done").`is`(true),
+                                Criteria.where("doneInstant").gte(recentThreshold),
+                            ),
+                        ).thenValueOf("\$estimations.effort")
+                        .otherwise(0.0),
+                ).`as`("recentlyCompletedEffort")
 
-        val projectionOp = project("totalCount", "completedCount", "recentlyCompletedCount", "totalEffort", "totalDoneEffort")
+        val projectionOp =
+            project("totalCount", "completedCount", "recentlyCompletedCount", "totalEffort", "completedEffort", "recentlyCompletedEffort")
         return Pair(groupOp, projectionOp)
     }
 
-    private fun buildContributorFacet(recentThreshold: Instant): Triple<UnwindOperation, GroupOperation, ProjectionOperation> {
+    private fun buildContributorFacet(
+        recentThreshold: Instant,
+        sortField: String?,
+    ): List<AggregationOperation> {
         val unwindOp = unwind("assigneeIds")
         val groupOp =
             group("assigneeIds")
@@ -187,7 +198,17 @@ class TaskInfraRepositoryImpl(
                         .`when`(Criteria.where("done").`is`(true))
                         .thenValueOf("\$estimations.effort")
                         .otherwise(0.0),
-                ).`as`("totalDoneEffort")
+                ).`as`("completedEffort")
+                .sum(
+                    ConditionalOperators
+                        .`when`(
+                            Criteria().andOperator(
+                                Criteria.where("done").`is`(true),
+                                Criteria.where("doneInstant").gte(recentThreshold),
+                            ),
+                        ).thenValueOf("\$estimations.effort")
+                        .otherwise(0.0),
+                ).`as`("recentlyCompletedEffort")
 
         val projectionOp =
             project()
@@ -201,12 +222,32 @@ class TaskInfraRepositoryImpl(
                 .`as`("recentlyCompletedCount")
                 .and("totalEffort")
                 .`as`("totalEffort")
-                .and("totalDoneEffort")
-                .`as`("totalDoneEffort")
+                .and("completedEffort")
+                .`as`("completedEffort")
+                .and("recentlyCompletedEffort")
+                .`as`("recentlyCompletedEffort")
                 .andExclude("_id")
 
-        return Triple(unwindOp, groupOp, projectionOp)
+        val sort =
+            sort(Sort.by(Sort.Direction.DESC, if (sortField.isNullOrBlank()) "totalCount" else sortField))
+
+        return listOf(unwindOp, groupOp, projectionOp, sort)
     }
+
+    private fun mapProjectTasksStats(projectStatsList: List<Document>): TasksStats =
+        if (projectStatsList.isNotEmpty()) {
+            val proj = projectStatsList.first()
+            TasksStats(
+                recentlyCompletedCount = proj.getInteger("recentlyCompletedCount", 0),
+                completedCount = proj.getInteger("completedCount", 0),
+                totalCount = proj.getInteger("totalCount", 0),
+                totalEffort = proj.getDouble("totalEffort") ?: 0.0,
+                completedEffort = proj.getDouble("completedEffort") ?: 0.0,
+                recentlyCompletedEffort = proj.getDouble("recentlyCompletedEffort") ?: 0.0,
+            )
+        } else {
+            TasksStats(0, 0, 0, 0.0, 0.0, 0.0)
+        }
 
     companion object {
         const val RECENT_PERIOD_DAYS_DEFAULT = 31L
