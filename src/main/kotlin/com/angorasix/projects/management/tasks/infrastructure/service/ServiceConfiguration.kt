@@ -7,7 +7,6 @@ import com.angorasix.projects.management.tasks.infrastructure.config.configurati
 import com.angorasix.projects.management.tasks.messaging.handler.ProjectsManagementTasksMessagingHandler
 import com.angorasix.projects.management.tasks.presentation.handler.ProjectManagementTasksHandler
 import com.angorasix.projects.management.tasks.presentation.router.ProjectManagementTasksRouter
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.cloud.stream.function.StreamBridge
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -26,10 +25,9 @@ class ServiceConfiguration {
     @Bean
     fun tasksMessagingHandler(
         service: ProjectsManagementTasksService,
-        objectMapper: ObjectMapper,
         streamBridge: StreamBridge,
         amqpConfigs: AmqpConfigurations,
-    ) = ProjectsManagementTasksMessagingHandler(service, objectMapper, streamBridge, amqpConfigs)
+    ) = ProjectsManagementTasksMessagingHandler(service, streamBridge, amqpConfigs)
 
     @Bean
     fun tasksRouter(

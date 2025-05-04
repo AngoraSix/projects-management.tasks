@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.domain.task.TaskEstimations
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
@@ -30,12 +30,12 @@ fun Task.convertToDto(): TaskDto =
     )
 
 fun Task.convertToDto(
-    requestingContributor: SimpleContributor?,
+    requestingContributor: A6Contributor?,
     apiConfigs: ApiConfigs,
     request: ServerRequest,
 ): TaskDto = convertToDto().resolveHypermedia(requestingContributor, this, apiConfigs, request)
 
-fun TaskDto.convertToDomain(admins: Set<SimpleContributor>): Task =
+fun TaskDto.convertToDomain(admins: Set<A6Contributor>): Task =
     Task(
         projectManagementId,
         title,
@@ -55,7 +55,7 @@ fun ProjectManagementTaskStats.convertToDto(): ProjectManagementTaskStatsDto =
     )
 
 fun ProjectManagementTaskStats.convertToDto(
-    requestingContributor: SimpleContributor?,
+    requestingContributor: A6Contributor?,
     apiConfigs: ApiConfigs,
     request: ServerRequest,
 ): ProjectManagementTaskStatsDto = convertToDto().resolveHypermedia(requestingContributor, this, apiConfigs, request)

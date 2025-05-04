@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.infrastructure.persistence.repository
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.infrastructure.domain.ContributorStats
 import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
@@ -44,7 +44,7 @@ class TaskInfraRepositoryImpl(
 
     override suspend fun findForContributorUsingFilter(
         filter: ListTaskFilter,
-        requestingContributor: SimpleContributor?,
+        requestingContributor: A6Contributor?,
     ): Task? =
         mongoOps
             .find(filter.toQuery(requestingContributor), Task::class.java)
@@ -52,7 +52,7 @@ class TaskInfraRepositoryImpl(
 
     override suspend fun resolveStatsUsingFilter(
         filter: ListTaskFilter,
-        requestingContributor: SimpleContributor?,
+        requestingContributor: A6Contributor?,
     ): ProjectManagementTaskStats {
         // 1. Get the projectManagementId from filter.
         val projectManagementId = extractProjectManagementId(filter)
@@ -254,7 +254,7 @@ class TaskInfraRepositoryImpl(
     }
 }
 
-private fun ListTaskFilter.toQuery(requestingContributor: SimpleContributor? = null): Query {
+private fun ListTaskFilter.toQuery(requestingContributor: A6Contributor? = null): Query {
     val query = Query()
 
     ids?.let { query.addCriteria(where("_id").`in`(it as Collection<Any>)) }

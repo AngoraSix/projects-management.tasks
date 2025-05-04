@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
@@ -20,7 +20,7 @@ import org.springframework.web.util.ForwardedHeaderUtils
  */
 
 fun TaskDto.resolveHypermedia(
-    requestingContributor: SimpleContributor?,
+    requestingContributor: A6Contributor?,
     task: Task,
     apiConfigs: ApiConfigs,
     request: ServerRequest,
@@ -49,7 +49,7 @@ fun TaskDto.resolveHypermedia(
 }
 
 fun ProjectManagementTaskStatsDto.resolveHypermedia(
-    requestingContributor: SimpleContributor?,
+    requestingContributor: A6Contributor?,
     projectManagementTaskStats: ProjectManagementTaskStats,
     apiConfigs: ApiConfigs,
     request: ServerRequest,

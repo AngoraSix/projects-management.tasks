@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.domain.task
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import org.springframework.data.annotation.Id
 import org.springframework.data.annotation.PersistenceCreator
 import org.springframework.data.mongodb.core.mapping.Document
@@ -21,7 +21,7 @@ data class Task
         val projectManagementId: String,
         val title: String,
         val description: String = "",
-        val admins: Set<SimpleContributor> = emptySet(),
+        val admins: Set<A6Contributor> = emptySet(),
         var assigneeIds: Set<String> = emptySet(),
         val done: Boolean = false,
         val doneInstant: Instant? = null,
@@ -32,7 +32,7 @@ data class Task
             projectManagementId: String,
             title: String,
             description: String = "",
-            admins: Set<SimpleContributor> = emptySet(),
+            admins: Set<A6Contributor> = emptySet(),
             assigneeIds: Set<String> = emptySet(),
             done: Boolean = false,
             doneInstant: Instant? = null,
