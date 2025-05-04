@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.commons.infrastructure.constants.AngoraSixInfrastructure
 import com.angorasix.commons.reactive.presentation.error.resolveNotFound
 import com.angorasix.projects.management.tasks.application.ProjectsManagementTasksService
@@ -42,7 +42,7 @@ class ProjectManagementTasksHandler(
         return service
             .findTasks(queryFilter)
             .map {
-                it.convertToDto(requestingContributor as? SimpleContributor, apiConfigs, request)
+                it.convertToDto(requestingContributor as? A6Contributor, apiConfigs, request)
             }.let {
                 ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyAndAwait(it)
             }
@@ -63,7 +63,7 @@ class ProjectManagementTasksHandler(
         val queryFilter = request.queryParams().toQueryFilter(projectManagementId)
 
         return service
-            .resolveProjectManagementTasksStats(filter = queryFilter, requestingContributor = requestingContributor as SimpleContributor?)
+            .resolveProjectManagementTasksStats(filter = queryFilter, requestingContributor = requestingContributor as A6Contributor?)
             .convertToDto(requestingContributor, apiConfigs, request)
             .let {
                 ok().contentType(MediaTypes.HAL_FORMS_JSON).bodyValueAndAwait(it)
@@ -84,7 +84,7 @@ class ProjectManagementTasksHandler(
         service.findSingleTask(projectManagementTaskId)?.let {
             val outputProjectManagementTask =
                 it.convertToDto(
-                    requestingContributor as? SimpleContributor,
+                    requestingContributor as? A6Contributor,
                     apiConfigs,
                     request,
                 )

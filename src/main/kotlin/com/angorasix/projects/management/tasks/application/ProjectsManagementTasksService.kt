@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.application
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.domain.task.TaskRepository
 import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
@@ -23,7 +23,7 @@ class ProjectsManagementTasksService(
 
     suspend fun resolveProjectManagementTasksStats(
         filter: ListTaskFilter,
-        requestingContributor: SimpleContributor?,
+        requestingContributor: A6Contributor?,
     ): ProjectManagementTaskStats = repository.resolveStatsUsingFilter(filter, requestingContributor)
 
     suspend fun createTask(projectManagementTask: Task): Task = repository.save(projectManagementTask)

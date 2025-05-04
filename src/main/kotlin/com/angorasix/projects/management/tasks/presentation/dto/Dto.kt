@@ -1,6 +1,6 @@
 package com.angorasix.projects.management.tasks.presentation.dto
 
-import com.angorasix.commons.domain.SimpleContributor
+import com.angorasix.commons.domain.A6Contributor
 import org.springframework.hateoas.RepresentationModel
 import java.time.Instant
 
@@ -13,7 +13,7 @@ data class TaskDto(
     val projectManagementId: String,
     val title: String,
     val description: String = "",
-    val admins: Set<SimpleContributor> = emptySet(),
+    val admins: Set<A6Contributor> = emptySet(),
     val assigneeIds: Set<String> = emptySet(),
     val done: Boolean = false,
     val doneInstant: Instant? = null,
