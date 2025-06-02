@@ -1,18 +1,16 @@
-package com.angorasix.projects.management.tasks.messaging.handler
+package com.angorasix.projects.management.tasks.messaging.listener.handler
 
 import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.commons.infrastructure.intercommunication.A6DomainResource
 import com.angorasix.commons.infrastructure.intercommunication.A6InfraTopics
 import com.angorasix.commons.infrastructure.intercommunication.integrations.IntegrationTaskReceived
 import com.angorasix.commons.infrastructure.intercommunication.messaging.A6InfraMessageDto
-import com.angorasix.commons.infrastructure.intercommunication.tasks.TasksSyncingCorrespondenceProcessed
 import com.angorasix.projects.management.tasks.application.ProjectsManagementTasksService
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.domain.task.TaskEstimations
-import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.amqp.AmqpConfigurations
+import com.angorasix.projects.management.tasks.infrastructure.applicationevents.TasksMatchingApplicationEvent
 import kotlinx.coroutines.runBlocking
-import org.springframework.cloud.stream.function.StreamBridge
-import org.springframework.messaging.support.MessageBuilder
+import org.springframework.context.ApplicationEventPublisher
 
 /**
  * <p>
@@ -22,8 +20,7 @@ import org.springframework.messaging.support.MessageBuilder
  */
 class ProjectsManagementTasksMessagingHandler(
     private val projectsManagementTasksService: ProjectsManagementTasksService,
-    private val streamBridge: StreamBridge,
-    private val amqpConfigs: AmqpConfigurations,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     fun tasksSyncing(message: A6InfraMessageDto<IntegrationTaskReceived>) =
         runBlocking {
@@ -47,49 +44,17 @@ class ProjectsManagementTasksMessagingHandler(
                     error("Mismatch in number of tasks for [${message.objectId}]")
                 }
 
-                val correspondence =
-                    TasksSyncingCorrespondenceProcessed(
-                        persistedTasks.zip(integrationTasks) { persistedTask, messageTaskDto ->
-                            requireNotNull(persistedTask.id)
-                            TasksSyncingCorrespondenceProcessed.TaskSyncingCorrespondence(messageTaskDto.integrationId, persistedTask.id)
-                        },
-                    )
-
-                publishSyncTasksCorrespondence(
-                    correspondence,
-                    amqpConfigs.bindings.mgmtTasksSyncing,
-                    message.objectId,
-                    projectManagementId,
-                    requestingContributor,
+                applicationEventPublisher.publishEvent(
+                    TasksMatchingApplicationEvent(
+                        projectManagementId = projectManagementId,
+                        persistedTasks = persistedTasks,
+                        integrationTasks = integrationTasks,
+                        correspondingObjectId = message.objectId,
+                        requestingContributor = requestingContributor,
+                    ),
                 )
             }
         }
-
-    private fun publishSyncTasksCorrespondence(
-        correspondence: TasksSyncingCorrespondenceProcessed,
-        bindingKey: String,
-        objectId: String, // Trello-wi7feDfZ
-        projectManagementId: String,
-        requestingContributor: A6Contributor,
-    ) {
-        if (correspondence.collection.isNotEmpty()) {
-            streamBridge.send(
-                bindingKey,
-                MessageBuilder
-                    .withPayload(
-                        A6InfraMessageDto(
-                            objectId,
-                            A6DomainResource.INTEGRATION_SOURCE_SYNC_EVENT,
-                            projectManagementId,
-                            A6DomainResource.PROJECT_MANAGEMENT.value,
-                            A6InfraTopics.TASKS_INTEGRATION_SYNCING_CORRESPONDENCE.value,
-                            requestingContributor,
-                            correspondence,
-                        ),
-                    ).build(),
-            )
-        }
-    }
 }
 
 private fun IntegrationTaskReceived.IntegrationTask.toDomain(

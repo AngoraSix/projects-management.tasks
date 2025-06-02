@@ -56,12 +56,3 @@ data class ContributorStatsDto(
     val contributorId: String,
     val tasks: TasksStatsDto,
 )
-
-data class TaskAccountingDto(
-    val taskId: String? = null,
-    val earnedCaps: Double? = null,
-    val redemptionStartInstant: Instant? = null,
-    val redemptionEndInstant: Instant? = null,
-    val redemptionFrequency: String? = null,
-    val id: String? = null,
-)
