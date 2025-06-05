@@ -3,10 +3,12 @@ package com.angorasix.projects.management.tasks.application
 import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.domain.task.TaskRepository
+import com.angorasix.projects.management.tasks.infrastructure.applicationevents.TasksDoneApplicationEvent
 import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
 import com.angorasix.projects.management.tasks.infrastructure.queryfilters.ListTaskFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
+import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
 
 /**
@@ -16,6 +18,7 @@ import java.time.Instant
  */
 class ProjectsManagementTasksService(
     private val repository: TaskRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     suspend fun findSingleTask(id: String): Task? = repository.findById(id)
 
@@ -31,17 +34,26 @@ class ProjectsManagementTasksService(
     /**
      * If a Task exists, we update certain fields. If it doesn't we create it.
      */
-    suspend fun processTasks(tasks: List<Task>): List<Task> {
+    suspend fun processTasks(
+        tasks: List<Task>,
+        projectManagementId: String,
+        requestingContributor: A6Contributor,
+    ): List<Task> {
+        val nowDoneTasks = ArrayList<Task>()
         val updatedTasks: List<Task> =
             tasks.map { task ->
                 if (task.id != null) {
                     // For existing tasks, retrieve and merge the update:
                     repository.findById(task.id)?.let { existingTask ->
-                        mergeTask(existingTask, task)
+                        mergeTask(existingTask, task).also {
+                            if (task.done && !existingTask.done) {
+                                nowDoneTasks.add(it)
+                            }
+                        }
                     } ?: run {
                         // If not found, treat as a new task
                         if (task.done) {
-                            task.copy(doneInstant = task.doneInstant ?: Instant.now())
+                            task.copy(doneInstant = task.doneInstant ?: Instant.now()).also { nowDoneTasks.add(it) }
                         } else {
                             task.copy(doneInstant = null)
                         }
@@ -49,14 +61,24 @@ class ProjectsManagementTasksService(
                 } else {
                     // New task: set doneInstant accordingly
                     if (task.done) {
-                        task.copy(doneInstant = task.doneInstant ?: Instant.now())
+                        task.copy(doneInstant = task.doneInstant ?: Instant.now()).also { nowDoneTasks.add(it) }
                     } else {
                         task.copy(doneInstant = null)
                     }
                 }
             }
         // Save all updated tasks in a single bulk operation.
-        return repository.saveAll(updatedTasks).toList() // Should maintain order
+        val savedTasks = repository.saveAll(updatedTasks).toList() // Should maintain order
+
+        // publish done tasks
+        applicationEventPublisher.publishEvent(
+            TasksDoneApplicationEvent(
+                doneTasks = nowDoneTasks,
+                projectManagementId = projectManagementId,
+                requestingContributor = requestingContributor,
+            ),
+        )
+        return savedTasks
     }
 
     /**
@@ -75,6 +97,8 @@ class ProjectsManagementTasksService(
         val newDoneInstant: Instant? =
             if (update.done) {
                 update.doneInstant ?: existing.doneInstant ?: Instant.now()
+            } else if (existing.done) {
+                existing.doneInstant
             } else {
                 null
             }

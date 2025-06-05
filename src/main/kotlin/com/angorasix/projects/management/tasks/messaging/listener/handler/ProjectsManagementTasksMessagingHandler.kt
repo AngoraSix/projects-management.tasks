@@ -37,7 +37,9 @@ class ProjectsManagementTasksMessagingHandler(
 
                 val persistedTasks =
                     projectsManagementTasksService.processTasks(
-                        infraTasks,
+                        tasks = infraTasks,
+                        projectManagementId = projectManagementId,
+                        requestingContributor = requestingContributor,
                     )
 
                 if (integrationTasks.size != persistedTasks.size) {

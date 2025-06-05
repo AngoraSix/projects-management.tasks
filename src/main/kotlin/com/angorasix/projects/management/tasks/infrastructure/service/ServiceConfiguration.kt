@@ -17,7 +17,10 @@ import org.springframework.context.annotation.Configuration
 @Configuration
 class ServiceConfiguration {
     @Bean
-    fun tasksService(repository: TaskRepository): ProjectsManagementTasksService = ProjectsManagementTasksService(repository)
+    fun tasksService(
+        repository: TaskRepository,
+        applicationEventPublisher: ApplicationEventPublisher,
+    ): ProjectsManagementTasksService = ProjectsManagementTasksService(repository, applicationEventPublisher)
 
     @Bean
     fun tasksHandler(

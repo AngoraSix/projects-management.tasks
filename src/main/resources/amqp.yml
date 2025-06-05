@@ -3,6 +3,7 @@ configs:
   amqp:
     bindings:
       mgmtTasksSyncing: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_BINDINGS_MGMTTASKSSYNCING:mgmtTasksSyncing}
+      tasksClosed: ${A6_PROJECTS_MGMT_TASKS_RABBITMQ_BINDINGS_TASKSCLOSED:tasksClosed}
 
 spring:
   cloud:
@@ -12,6 +13,8 @@ spring:
       bindings:
         mgmtTasksSyncing:
           destination: ${A6_MGMT_TASKS_RABBITMQ_OUTPUT_MGMTTASKSSYNCING_EXCHANGE:mgmtTasksSyncing} # existing exchange
+        tasksClosed:
+          destination: ${A6_MGMT_TASKS_RABBITMQ_OUTPUT_TASKSCLOSED_EXCHANGE:tasksClosed}
         tasksSyncing-in-0:
           destination: ${A6_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_EXCHANGE:mgmtIntegrationSyncing} # existing exchange (or creates)?
           group: ${A6_MGMT_TASKS_RABBITMQ_TASKSSYNCING_INPUT_QUEUE:tasksSyncing} # queue = a6-exchange.a6-queue - whole project management update (batch)
@@ -22,6 +25,9 @@ spring:
             consumer:
               republishToDlq: false
           mgmtTasksSyncing:
+            producer:
+              republishToDlq: false
+          tasksClosed:
             producer:
               republishToDlq: false
       binders:
