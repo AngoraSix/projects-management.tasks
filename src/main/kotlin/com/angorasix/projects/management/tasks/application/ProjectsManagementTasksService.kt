@@ -39,21 +39,16 @@ class ProjectsManagementTasksService(
         projectManagementId: String,
         requestingContributor: A6Contributor,
     ): List<Task> {
-        val nowDoneTasks = ArrayList<Task>()
         val updatedTasks: List<Task> =
             tasks.map { task ->
                 if (task.id != null) {
                     // For existing tasks, retrieve and merge the update:
                     repository.findById(task.id)?.let { existingTask ->
-                        mergeTask(existingTask, task).also {
-                            if (task.done && !existingTask.done) {
-                                nowDoneTasks.add(it)
-                            }
-                        }
+                        mergeTask(existingTask, task)
                     } ?: run {
                         // If not found, treat as a new task
                         if (task.done) {
-                            task.copy(doneInstant = task.doneInstant ?: Instant.now()).also { nowDoneTasks.add(it) }
+                            task.copy(doneInstant = task.doneInstant ?: Instant.now())
                         } else {
                             task.copy(doneInstant = null)
                         }
@@ -61,7 +56,7 @@ class ProjectsManagementTasksService(
                 } else {
                     // New task: set doneInstant accordingly
                     if (task.done) {
-                        task.copy(doneInstant = task.doneInstant ?: Instant.now()).also { nowDoneTasks.add(it) }
+                        task.copy(doneInstant = task.doneInstant ?: Instant.now())
                     } else {
                         task.copy(doneInstant = null)
                     }
@@ -73,7 +68,7 @@ class ProjectsManagementTasksService(
         // publish done tasks
         applicationEventPublisher.publishEvent(
             TasksDoneApplicationEvent(
-                doneTasks = nowDoneTasks,
+                doneTasks = savedTasks.filter { it.done },
                 projectManagementId = projectManagementId,
                 requestingContributor = requestingContributor,
             ),
