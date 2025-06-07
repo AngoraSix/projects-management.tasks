@@ -1,16 +1,13 @@
 package com.angorasix.projects.management.tasks.presentation.handler
 
 import com.angorasix.commons.domain.A6Contributor
+import com.angorasix.commons.reactive.presentation.mappings.addSelfLink
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.infrastructure.config.configurationproperty.api.ApiConfigs
 import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
 import com.angorasix.projects.management.tasks.presentation.dto.ProjectManagementTaskStatsDto
 import com.angorasix.projects.management.tasks.presentation.dto.TaskDto
-import org.springframework.hateoas.Link
-import org.springframework.hateoas.mediatype.Affordances
-import org.springframework.http.HttpMethod
 import org.springframework.web.reactive.function.server.ServerRequest
-import org.springframework.web.util.ForwardedHeaderUtils
 
 /**
  * <p>
@@ -27,19 +24,7 @@ fun TaskDto.resolveHypermedia(
 ): TaskDto {
     val getSingleRoute = apiConfigs.routes.getTask
     // self
-    val selfLink =
-        Link
-            .of(uriBuilder(request).path(getSingleRoute.resolvePath()).build().toUriString())
-            .withRel(getSingleRoute.name)
-            .expand(id)
-            .withSelfRel()
-    val selfLinkWithDefaultAffordance =
-        Affordances
-            .of(selfLink)
-            .afford(HttpMethod.OPTIONS)
-            .withName("default")
-            .toLink()
-    add(selfLinkWithDefaultAffordance)
+    addSelfLink(getSingleRoute, request, listOf(id ?: "unknown"))
 
     if (task.isAdmin(requestingContributor?.contributorId)) {
         // Here go admin actions
@@ -56,32 +41,12 @@ fun ProjectManagementTaskStatsDto.resolveHypermedia(
 ): ProjectManagementTaskStatsDto {
     val getSingleRoute = apiConfigs.routes.getProjectManagementTaskStats
     // self
-    val selfLink =
-        Link
-            .of(uriBuilder(request).path(getSingleRoute.resolvePath()).build().toUriString())
-            .withRel(getSingleRoute.name)
-            .expand(projectManagementTaskStats.projectManagementId)
-            .withSelfRel()
-    val selfLinkWithDefaultAffordance =
-        Affordances
-            .of(selfLink)
-            .afford(HttpMethod.OPTIONS)
-            .withName("default")
-            .toLink()
-    add(selfLinkWithDefaultAffordance)
+    addSelfLink(getSingleRoute, request, listOf(projectManagementTaskStats.projectManagementId))
 
     requestingContributor?.let {
         // Here go admin actions
-        add(selfLinkWithDefaultAffordance)
+        println("Requesting contributor: ${it.contributorId}")
     }
 
     return this
 }
-
-private fun uriBuilder(request: ServerRequest) =
-    request.requestPath().contextPath().let {
-        ForwardedHeaderUtils
-            .adaptFromForwardedHeaders(request.exchange().request.uri, request.exchange().request.headers)
-            .replacePath(it.toString())
-            .replaceQuery("")
-    }

@@ -3,10 +3,12 @@ package com.angorasix.projects.management.tasks.application
 import com.angorasix.commons.domain.A6Contributor
 import com.angorasix.projects.management.tasks.domain.task.Task
 import com.angorasix.projects.management.tasks.domain.task.TaskRepository
+import com.angorasix.projects.management.tasks.infrastructure.applicationevents.TasksDoneApplicationEvent
 import com.angorasix.projects.management.tasks.infrastructure.domain.ProjectManagementTaskStats
 import com.angorasix.projects.management.tasks.infrastructure.queryfilters.ListTaskFilter
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.toList
+import org.springframework.context.ApplicationEventPublisher
 import java.time.Instant
 
 /**
@@ -16,6 +18,7 @@ import java.time.Instant
  */
 class ProjectsManagementTasksService(
     private val repository: TaskRepository,
+    private val applicationEventPublisher: ApplicationEventPublisher,
 ) {
     suspend fun findSingleTask(id: String): Task? = repository.findById(id)
 
@@ -31,7 +34,11 @@ class ProjectsManagementTasksService(
     /**
      * If a Task exists, we update certain fields. If it doesn't we create it.
      */
-    suspend fun processTasks(tasks: List<Task>): List<Task> {
+    suspend fun processTasks(
+        tasks: List<Task>,
+        projectManagementId: String,
+        requestingContributor: A6Contributor,
+    ): List<Task> {
         val updatedTasks: List<Task> =
             tasks.map { task ->
                 if (task.id != null) {
@@ -56,7 +63,20 @@ class ProjectsManagementTasksService(
                 }
             }
         // Save all updated tasks in a single bulk operation.
-        return repository.saveAll(updatedTasks).toList() // Should maintain order
+        val savedTasks = repository.saveAll(updatedTasks).toList() // Should maintain order
+
+        // publish done tasks
+        savedTasks.filter { it.done }.takeIf { it.isNotEmpty() }?.let {
+            applicationEventPublisher.publishEvent(
+                TasksDoneApplicationEvent(
+                    doneTasks = it,
+                    projectManagementId = projectManagementId,
+                    requestingContributor = requestingContributor,
+                ),
+            )
+        }
+
+        return savedTasks
     }
 
     /**
@@ -75,6 +95,8 @@ class ProjectsManagementTasksService(
         val newDoneInstant: Instant? =
             if (update.done) {
                 update.doneInstant ?: existing.doneInstant ?: Instant.now()
+            } else if (existing.done) {
+                existing.doneInstant
             } else {
                 null
             }

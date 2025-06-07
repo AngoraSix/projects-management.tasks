@@ -18,4 +18,5 @@ data class AmqpConfigurations(
 
 class BindingConfigs(
     val mgmtTasksSyncing: String,
+    val tasksClosed: String,
 )
