@@ -66,13 +66,16 @@ class ProjectsManagementTasksService(
         val savedTasks = repository.saveAll(updatedTasks).toList() // Should maintain order
 
         // publish done tasks
-        applicationEventPublisher.publishEvent(
-            TasksDoneApplicationEvent(
-                doneTasks = savedTasks.filter { it.done },
-                projectManagementId = projectManagementId,
-                requestingContributor = requestingContributor,
-            ),
-        )
+        savedTasks.filter { it.done }.takeIf { it.isNotEmpty() }?.let {
+            applicationEventPublisher.publishEvent(
+                TasksDoneApplicationEvent(
+                    doneTasks = it,
+                    projectManagementId = projectManagementId,
+                    requestingContributor = requestingContributor,
+                ),
+            )
+        }
+
         return savedTasks
     }
 
