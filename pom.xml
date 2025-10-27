@@ -8,7 +8,7 @@
     <artifactId>projects.management.tasks</artifactId>
     <name>projects.management.tasks</name>
     <description>Projects Management Tasks Service</description>
-    <version>0.3.0</version>
+    <version>0.4.0</version>
 
     <parent>
         <artifactId>parent-pom-spring-kotlin</artifactId>
