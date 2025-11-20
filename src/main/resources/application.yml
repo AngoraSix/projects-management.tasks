@@ -3,7 +3,7 @@ server:
 
 logging:
   level:
-    root: DEBUG
+    root: ${A6_PROJECTS_MGMT_TASKS_LOGGING_LEVEL_GENERAL:INFO}
 
 spring:
   config:
